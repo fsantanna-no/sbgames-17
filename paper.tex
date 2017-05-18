@@ -557,6 +557,563 @@ Note that, unlike the implementation in C++, the ``advancing text'' behavior is
 not intermixed with the ``advancing pages'' behavior, instead, it is
 encapsulated inside the inner loop nested with a deeper indentation (ln. 9).
 
+\subsection{Dispatching Hierarchies \\ Case Study: Bomber `draw` and `update` callbacks}
+
+Entities typically form a dispatching hierarchy in which a container that
+receives a stimulus automatically forwards it to its managed children.
+
+\begin{figure*}
+\begin{minipage}[t]{0.50\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+class Bomber : public PinguAction {
+    <...>
+    Sprite sprite;
+}
+
+Bomber::Bomber (<...>) : <...> {
+    sprite.load(<...>);
+    <...>
+}
+
+void Bomber::update () {
+    sprite.update ();
+}
+
+void Bomber::draw (SceneContext& gc) {
+    <...>
+    gc.color().draw(sprite, <...>);
+}
+\end{lstlisting}
+\centering\small{\ax Implementation in C++}
+\end{minipage}
+%
+\begin{minipage}[t]{0.50\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+code/await Bomber (void) -> ActionName do
+    <...>
+    var&? Sprite sprite = spawn Sprite(<...>);
+    <...>
+end
+\end{lstlisting}
+\centering\small{\bx Implementation in \CEU}
+\end{minipage}
+%\rule{8.4cm}{0.37pt}
+\caption{ Shared-memory concurrency in \CEU:
+example \ax is safe because the trails access \code{x} atomically in different 
+reactions;
+example \bx is unsafe because both trails access \code{y} in the same reaction.
+\label{lst.shared}
+}
+\end{figure*}
+
+\begin{figure}
+\centering
+\includegraphics[width=\columnwidth]{story}
+\caption{State machine for the Story screen.
+\label{fig.story}
+}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=\columnwidth]{hierarchy}
+\caption{Dispatching chain for \code{update}.
+\label{fig.hier}
+}
+\end{figure}
+
+In C++, the class \code{Bomber} declares a \code{sprite} member to handle its
+animation frames (Figure~\ref{fig.TODO}).
+%
+The \code{Sprite} class is part of the game engine and knows how to update and
+render itself.
+However, the \code{Bomber} still has to respond to \code{update} and
+\code{draw} requests from the game and forward them to the sprite
+(ln. 11--13 and 15--18).
+%
+To understand how the \code{update} callback flows from the original
+environment stimulus from the game down to the sprite, we need to follow a long
+chain of 7 method dispatches (Figure~\ref{fig.hier}):
+%
+\begin{enumerate}
+\item \code{ScreenManager::display} in the main game loop calls \code{update}.
+\item \code{ScreenManager::update} calls \code{last\_screen->update} for the
+      active game screen (a \code{GameSession} instance, considering the
+      \code{Bomber}).
+\item \code{GameSession::update} calls \code{world->update}.
+\item \code{World::update} calls \code{obj->update} for each object in the
+      world.
+\item \code{PinguHolder::update} calls \code{pingu->update} for each pingu
+      alive.
+\item \code{Pingu::update} calls \code{action->update} for the active pingu
+      action.
+\item \code{Bomber::update} calls \code{sprite.update}.
+      \code{Sprite::update} finally updates the animation frame.
+\end{enumerate}
+%
+Each dispatching step in the chain is necessary considering the game
+architecture:
+%
+\begin{itemize}
+\item With a single assignment to \code{last\_screen}, we can easily deactivate
+      the current screen and redirect all dispatches to a new screen.
+\item The \code{World} class manages and dispatches events to all game
+      entities, such as all pingus and traps, with the common interface
+      \code{WorldObj}.
+\item Since it is common to iterate only over the pingus (vs. all world
+      objects), the container \code{PinguHolder} manages all pingus.
+\item Since a single pingu can change between actions during lifetime, the
+      \code{action} member decouples them with another level of indirection.
+\item Sprites are part of the game engine and are reusable everywhere (e.g., UI
+      buttons, world objects, etc.), so it is also convenient to decouple them
+      from actions.
+\end{itemize}
+%
+The \code{draw} callback flows through the same dispatching hierarchy until
+reaching the \code{Sprite} class.
+
+In \CEU, the \code{Bomber} action spawns a \code{Sprite} animation instance on
+its body.
+%
+The \code{Sprite} instance (ln. 3) can react directly to external \code{dt} and
+\code{redraw} events (which are analogous to \code{update} and \code{redraw}
+callbacks, respectively), bypassing the program hierarchy entirely.
+While and \emph{only while} the bomber abstraction is alive, the sprite
+animation is also alive.
+The radical decoupling between the program hierarchy and reactions to events
+eliminates dispatching chains entirely.
+
+\subsection{Lifespan Hierarchies \\ Case Study: The Pingus Container}
+
+Entities typically form a lifespan hierarchy in which a terminating
+container entity automatically destroys its managed children.
+
+\begin{figure*}
+\begin{minipage}[t]{0.50\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+Pingu* PinguHolder::create_pingu (<...>) {
+    <...>
+    Pingu* pingu = new Pingu (<...>);
+    pingus.push_back(pingu);
+    <...>
+}
+
+void PinguHolder::update() {
+    <...>
+    while(pingu != pingus.end()) {
+        (*pingu)->update();
+        if ((*pingu)->get_status() == Pingu::PS_DEAD) {
+            pingu = pingus.erase(pingu);
+        }
+        <...>
+        ++pingu;
+    }
+}
+\end{lstlisting}
+\centering\small{\ax Implementation in C++}
+\end{minipage}
+%
+\begin{minipage}[t]{0.40\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+code/await Game (void) do
+    <...>
+    pool[] Pingu pingus;
+    code/await Pingu_Spawn (<...>) do
+        <...>
+        spawn Pingu(<...>) in outer.pingus;
+    end
+    <...>   // code invoking Pingu_Spawn
+end
+
+TODO
+
+code/await Pingu (<...>) do
+    <...>
+    loop do
+        await outer.game.dt;
+        if call Pingu_Rel_Getpixel(0,-1) == {Groundtype::GP_OUTOFSCREEN} then
+            <...>
+            escape {PS_DEAD};
+        end
+    end
+end
+\end{lstlisting}
+\centering\small{\bx Implementation in \CEU}
+\end{minipage}
+%\rule{8.4cm}{0.37pt}
+\caption{ Shared-memory concurrency in \CEU:
+example \ax is safe because the trails access \code{x} atomically in different 
+reactions;
+example \bx is unsafe because both trails access \code{y} in the same reaction.
+\label{lst.shared}
+}
+\end{figure*}
+
+\begin{figure}
+\centering
+\includegraphics[width=\columnwidth]{story}
+\caption{State machine for the Story screen.
+\label{fig.story}
+}
+\end{figure}
+
+In C++, the class \code{PinguHolder} is a container that holds all pingus
+alive.
+%
+The method \code{PinguHolder::create\_pingu} (ln. 1--6) is called periodically
+to create a new \code{Pingu} and add it to the \code{pingus} collection
+(ln. 3--4).
+The method \code{PinguHolder::update} (ln. 8--18) checks the state of all
+pingus on every frame, removing those with the dead status (ln. 12--14).
+%
+Entities with dynamic lifespan in C++ require explicit \code{add} and
+\code{remove} calls associated to a container (ln. 4,13).
+Without the \code{erase} call above, a dead pingu would remain in the
+collection with updates on every frame (ln. 11).
+Since the \code{redraw} behavior for a dead pingu is innocuous, the death could
+go unnoticed but the program would keep consuming memory and CPU time.
+This problem is known as the \emph{lapsed listener}~\cite{TODO} and also occurs
+in languages with garbage collection:
+A container typically holds a strong reference to a child (sometimes the only 
+reference to it), and the runtime cannot magically detect it as garbage.
+
+\begin{figure}
+\centering
+\includegraphics[width=\columnwidth]{pool}
+\caption{Lifespan of dynamic instances.
+\label{fig.pool}
+}
+\end{figure}
+
+\CEU supports \code{pool} declarations to hold dynamic abstraction instances.
+Additionally, the \code{spawn} statement supports a pool identifier to
+associate the new instance with a pool.
+%
+The game screen spawns a new \code{Pingu} on every invocation of
+\code{Pingu\_Spawn}.
+%
+The \code{spawn} statement (ln. 6) specifies the pool declared at the top-level
+block of the game screen (ln. 3).
+In this case, the lifespan of the new instances follows the scope of the pool
+(ln. 1--9) instead of the enclosing scope of the \code{spawn} statement
+(ln. 4--7).
+Since pools are also subject to lexical scope, the lifespan of all dynamically
+allocated pingus is constrained to the game screen.
+%
+Lexical scopes handle memory and event dispatching automatically for static
+instances and also for pools.
+However, the lifespan of a dynamic instance does not necessarily have to match
+the lifespan of its associated pool (Figure~\ref{fig.pool}).
+In \CEU, when the execution block of a dynamic instance terminates, which
+characterizes its *natural termination*, the instance is automatically removed
+from its pool.
+Therefore, dynamic instances do not require any extra bookkeeping related to 
+containers or explicit deallocation.
+%
+To remove a pingu from the game in \CEU, we just need to terminate its execution
+block according to the appropriate conditions:
+%
+The \code{escape} statement (ln. TODO) aborts the execution block of the
+\code{Pingu} instance, removing it from its associated pool automatically.
+Hence, a dynamic instance that terminates naturally leaves no traces in the 
+program.
+
+\subsection{Signaling Mechanisms\\ Case Study: Global Keys and the Options Menu}
+
+Entities often need to communicate explicitly through signaling mechanisms,
+especially if there is no hierarchy relationship between them.
+
+\begin{figure}
+\centering
+\includegraphics[width=\columnwidth]{options-anim-opt}
+\caption{The \emph{Mouse Grab} configuration option.
+\label{fig.options}
+}
+\end{figure}
+
+The *Mouse Grab* option restricts the mouse movement to the game window
+boundaries (Figure~\ref{fig.options}).
+The option can be set anywhere in the game by pressing *Ctrl-G*.
+In addition, the *Options* menu has a check box to toggle the *Mouse Grab*
+option with mouse clicks while still responding to *Ctrl-G* presses.
+
+\begin{figure}
+\centering
+\includegraphics[width=\columnwidth]{options-anim-opt}
+\caption{Mutual dependency between signals.
+\label{fig.events}
+}
+\end{figure}
+
+The implementations in C++ and \CEU use a signalling mechanism to connect the
+key presses, the check box, and a configuration manager that applies the
+appropriate side effects in the game (i.e., restrict the mouse movement).
+Figure~\ref{fig.events} illustrates how the mutual notifications create a 
+dependency cycle between the configuration manager and the check box.
+
+\begin{figure*}
+\begin{minipage}[t]{0.50\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+void GlobalEvent::on_button_press (<...>) {
+    <...>
+    switch (event.keysym.sym) {
+        case SDLK_g:
+            if (keystate[SDLK_LCTRL] || keystate[SDLK_RCTRL]) {
+                config_manager.set_mouse_grab(          @ctrl_g_cpp
+                    !config_manager.get_mouse_grab());
+            }
+            break;
+        <...>
+    }
+}
+
+///
+
+boost::signals2::signal<void(bool)> on_mouse_grab_change;   // definition in `config_manager.h` @signal_def
+
+void ConfigManager::set_mouse_grab (bool v) {   @set_mouse_grab
+    <...>
+    if (v != get_mouse_grab()) {                @if_1
+        <...>   // the actual "grab" effect
+        on_mouse_grab_change(v);                @signal
+    }                                           @if_2
+}
+
+///
+
+boost::signals2::signal<void (bool)> on_change;   // definition in `check_box.hpp`
+
+void CheckBox::set_state (bool is_on, bool send_signal) {   @last_argument
+    <...>   // switches the check box state
+    if (send_signal) {      @if_cb_1
+        on_change(is_on);
+    }                       @if_cb_2
+}
+
+///
+
+typedef std::vector&lt;boost::signals2::connection&gt; Connections;   // definition in `option_menu.hpp`
+Connections connections;                                        // definition in `option_menu.hpp`
+
+OptionMenu::OptionMenu() :
+    connections(),
+    mousegrab_box(),
+    <...>
+{
+    mousegrab_box = new CheckBox(<...>);
+    connections.push_back(                              @bind_11
+        config_manager.on_mouse_grab_change.connect(
+            std::bind(&CheckBox::set_state, mousegrab_box, <...>, false); @bind_false
+        )
+    );                                                  @bind_12
+    connections.push_back(                              @bind_21
+        mousegrab_box->on_change.connect(
+            std::bind(&ConfigManager::set_mouse_grab, &config_manager, <...>);
+        )
+    );                                                  @bind_22
+    <...>
+
+}
+
+OptionMenu::~OptionMenu() {     @destr_1
+    for (Connections::iterator i=connections.begin(); i!=connections.end(); ++i) {
+        (*i).disconnect();
+    }
+}                               @destr_2
+
+
+\end{lstlisting}
+\centering\small{\ax Implementation in C++}
+\end{minipage}
+%
+\begin{minipage}[t]{0.40\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+spawn do
+    var _SDL_KeyboardEvent&& e;
+    every e in SDL_KEYDOWN do
+        var _u8&& keystate = _SDL_GetKeyState(null);
+        <...>
+        if e:keysym.sym == {SDLK_g} then
+            if ((keystate[{SDLK_LCTRL}] as bool) or (keystate[{SDLK_RCTRL}] as bool)) then
+                emit config_manager.go_mouse_grab(    @ctrl_g_ceu
+                        not ({config_manager.get_mouse_grab()} as bool));
+            end
+        end
+        <...>
+    end
+end
+
+///
+
+data ConfigManager with
+    event bool go_mouse_grab;
+end
+var ConfigManager config_manager = val ConfigManager(_);
+
+spawn do
+    var bool v;
+    every v in config_manager.go_mouse_grab do
+        <...>   // the actual "grab" effect
+    end
+end
+
+///
+
+data ICheckBox with
+    var   bool is_on;
+    event bool go_click;
+end
+
+code/await CheckBox (<...>) -> (var ICheckBox checkbox) -> FOREVER do
+    checkbox = val ICheckBox(<...>);
+    <...>
+    par do
+        every c.component.on_click do                   @every_1
+            emit checkbox.go_click(not checkbox.is_on); @dir_class_app
+        end                                             @every_2
+    with
+        loop do                                         @loop_1
+            <...>   // switches the check box state
+            checkbox.is_on = await checkbox.go_click;   @dir_app_class
+        end                                             @loop_2
+    end
+end
+
+///
+
+code/await OptionMenu <...> do
+    <...>
+    var& CheckBox b2 = <...>;
+    spawn do
+        par do
+            var bool v;
+            every v in outer.config_manager.go_mouse_grab do    @loop_11
+                emit b2.checkbox.go_click(v);
+            end                                                 @loop_12
+        with
+            var bool v;
+            every v in b2.checkbox.go_click do                  @loop_21
+                emit outer.config_manager.go_mouse_grab(v);
+            end                                                 @loop_22
+        end
+    end
+    <...>
+end
+
+\end{lstlisting}
+\centering\small{\bx Implementation in \CEU}
+\end{minipage}
+%\rule{8.4cm}{0.37pt}
+\caption{ Shared-memory concurrency in \CEU:
+example \ax is safe because the trails access \code{x} atomically in different 
+reactions;
+example \bx is unsafe because both trails access \code{y} in the same reaction.
+\label{lst.shared}
+}
+\end{figure*}
+
+In C++, the class `GlobalEvent` detects *Ctrl-G*
+presses and invokes the callback `config\_manager.set\_mouse\_grab`:
+%
+The class `ConfigManager` uses a `boost::signal`
+[[![X]][boost\_signal]] to notify the application when the new configuration is
+applied:
+%
+The `if` enclosing the signal emission @NN(if\_1,-,if\_2) breaks the dependency 
+cycle of Figure~\ref{fig.events} and prevents an infinite execution loop.
+%
+The class `CheckBox` also uses a `boost::signal` to 
+notify the application on changes:
+%
+Again, the `if` enclosing the signal emission @NN(if\_cb\_1,-,if\_cb\_2) breaks the 
+dependency cycle of Figure~\ref{fig.events} to avoid infinite execution.
+%
+The class `OptionMenu` creates the dependency loop by
+connecting the two signals:
+%
+The constructor binds
+the signal `config\_manager.on\_mouse\_grab\_change` to the callback method
+           `mousegrab\_box->set\_state`
+           @NN(bind\_11,-,bind\_12),
+and also
+the signal `mousegrab\_box->on\_change` to the callback method
+           `config\_manager.set\_mouse\_grab`
+           @NN(bind\_21,-,bind\_22).
+This way, every time the `ConfigManager` signals `on\_mouse\_grab\_change`
+(`ConfigManager`, ln. @N(signal) [up](\#cpp\_config-manager)), `set\_state` is
+implicitly called.
+The same happens between the signal `on\_change` in the `CheckBox` and the 
+method `set\_mouse\_grab` in the `ConfigManager`
+(`ConfigManager`, ln. @N(set\_mouse\_grab) [up](\#cpp\_config-manager)).
+%
+Note that the signal binding to call `CheckBox::set\_state` @NN(bind\_false) 
+receives a fixed value `false` as the last argument to prevent infinite
+execution (`CheckBox`, ln. @N(last\_argument) [up](\#cpp\_check-box)).
+%
+The destructor @NN(destr\_1,-,destr\_2) breaks the connections explicitly when
+the *Option* screen terminates.
+
+In \CEU, a *Ctrl-G* key press broadcasts the internal event
+`config\_manager.go\_mouse\_grab` to the application [[![X]][ceu\_global\_event]]:
+%
+The configuration manager [[![X]][ceu\_config\_manager]] just needs to react to
+`go\_mouse\_grab` continuously to perform the *grab* effect:
+%
+The `CheckBox` [[![X]][ceu\_check\_box]] exposes the event `go\_click` for 
+notifications in both directions, i.e., from the abstraction to the application
+and *vice versa*:
+%
+The abstraction reacts to external clicks continuously @NN(every\_1,-,every\_2)
+to broadcast the event `go\_click` @NN(dir\_class\_app).
+It also reacts continuously to `go\_click` in another line of execution
+@NN(loop\_1,-,loop\_2), which awakes from notifications from the first line of
+execution or from the application.
+%
+The `OptionMenu` [[![X]][ceu\_option\_menu]] connects the two events as 
+follows:
+%
+The two loops in parallel handle the connections in opposite directions:
+from the configuration manager to the check box @NN(loop\_11,-,loop\_12);
+and
+from the check box to the configuration manager @NN(loop\_21,-,loop\_22).
+%
+When the *Option* screen terminates, the connections break automatically since
+the body is automatically aborted.
+%
+Note that the implementation in \CEU does not check event emits to break the
+dependency cycle and prevent infinite execution.
+Due to the [stack-based execution for internal events][ceu\_stack] in \CEU,
+programs with mutually-dependent events do not create infinite execution loops.
+
+\section{Related Work}
+
+\section{Conclusion}
+
+We promote the \emph{structured synchronous reactive} programming model of
+\CEU for the development of games.
+We present in-depth use cases categorized in 5 control-flow patterns applied to
+\emph{Pingus} (an open-source \emph{Lemmings} clone) that likely apply to other
+games.
+
+We show how the standard way to program games with objects and callbacks in C++
+hinders structured programming techniques, such as support for sequential
+execution, long-lasting loops, and persisting local variables.
+In this sense, callbacks actually disrupt structured programming, becoming
+["our generation’s goto"][goto] according to Miguel de Icaza.
+
+Overall, we believe that most difficulties in implementing control behavior in 
+game logic is not inherent to this domain, but a result of accidental
+complexity due to the lack of structured abstractions and an appropriate
+concurrency model to handle event-based applications.
+
+[goto]: http://tirania.org/blog/archive/2013/Aug-15.html
+
+\section{Acknowledgments}
+
+[Leonardo Kaplan](https://github.com/leokaplan/) and
+[Alexander Tkachov](https://github.com/Tkachov/)
+for early explorations and prototypes.
+
 \bibliographystyle{abbrv}
 \bibliography{my,other}
 \end{document}
