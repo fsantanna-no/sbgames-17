@@ -81,11 +81,11 @@ escapeinside={||},
         \\ Departamento de Inform\'atica e Ci\^encia da Computa\c{c}\~ao, UERJ
         \\ francisco@ime.uerj.br}
 
-\abstract{Abstract.
+\abstract{TODO.
 
 \smallskip
 
-\noindent \textbf{Keywords:} Radiosity, global illumination, constant time.
+\noindent \textbf{Keywords:} TODO, TODO, TODO.
 }
 
 %% Copyright space is enabled by default as required by guidelines.
@@ -106,12 +106,10 @@ escapeinside={||},
 }
 \end{figure}
 
-Pingus is an open-source clone of Lemmings%
-\footnote{Lemmings: \url{https://en.wikipedia.org/wiki/Lemmings_(video_game)}},
-a puzzle-platformer video game (Figure~\ref{fig.pingus}).      
+Pingus is an open-source puzzle-platform video game based on Lemmings.
 The objective of the game is to guide a group of penguins through a number of
-obstacles towards a designated exit%
-\footnote{Pingus gameplay video: \url{https://www.youtube.com/watch?v=MKrJgIFtJX0}}.
+obstacles towards a designated exit (Figure~\ref{fig.pingus}).
+% \footnote{Pingus gameplay video: \url{https://www.youtube.com/watch?v=MKrJgIFtJX0}}.
 %
 Pingus is developed in standard object-oriented C++, the \emph{lingua franca}
 of game development \cite{games.patterns}.
@@ -124,8 +122,8 @@ According to Tim Sweeney (of Unreal Engine fame), about half the complexity in
 game development resides in \emph{simulation} (aka \emph{game logic}), but
 which accounts for only 10\% of the CPU budget~\cite{games.sweeney}
 (Figure~\ref{fig.sweeney}).
-The game logic ``models the state of the game world as interacting objects
-evolve over time''.
+%The game logic ``models the state of the game world as interacting objects
+%evolve over time''.
 The high development costs contrasting with the low impact on performance
 appeals for alternatives with productivity in mind, especially considering that
 it is the game logic that varies the most between projects.
@@ -140,12 +138,12 @@ higher productivity''.
 }
 \end{figure}
 
-Object-oriented games use the \emph{observer pattern}~\cite{games.patterns}
-in the game logic to handle events from the environment (e.g., key presses and
-timers) and also as a notification mechanism between game entities.
+Object-oriented games rely on the \emph{observer pattern}~\cite{games.patterns}
+to handle events from the environment (e.g., key presses and timers) and also
+as a notification mechanism between entities in the game logic.
 %
-The observers are short-lived callbacks which must execute as fast as possible
-and in real time to keep the game reactive to incoming events.
+The observers are short-lived callbacks that have to execute as fast as
+possible to keep the game reactive to incoming events in real time.
 %
 For this reason, callbacks cannot contain long-lasting locals and loops, which
 are elementary capabilities of classical structured
@@ -154,12 +152,12 @@ programming~\cite{rp.deprecating,rp.rescala,sync_async.cooperative}.
 In this sense, callbacks actually disrupt structured programming, becoming
 ``our generation's \code{goto}''.%
 \footnote{``Callbacks as our Generations' Go To Statement'':
-\url{http://tirania.org/blog/archive/2013/Aug-15.html}}%
-\footnote{``Escape from Callback Hell'':
-\url{http://elm-lang.org/learn/Escape-from-Callback-Hell.elm}}
+\url{http://tirania.org/blog/archive/2013/Aug-15.html}}
+%\footnote{``Escape from Callback Hell'':
+%\url{http://elm-lang.org/learn/Escape-from-Callback-Hell.elm}}
 
-\CEU~\cite{ceu.sensys13,ceu.mod15} is a programming language that aims to offer
-a concurrent and expressive alternative to C/C++ with the characteristics that
+\CEU~\cite{ceu.sensys13,ceu.mod15} is a programming language that offers a
+concurrent and expressive alternative to C/C++ with the characteristics that
 follow:
 %
 \begin{itemize}
@@ -178,22 +176,20 @@ imposed by the observer pattern~\cite{rp.deprecating}.
 %
 \CEU supports logical parallelism with a resource-efficient implementation in
 terms of memory and CPU usage~\cite{ceu.sensys13}.
-The runtime is single threaded and the language requires no garbage
-collection.
+The runtime is single threaded and does not rely on garbage collection.
 
 In this work, we advocate structured synchronous reactive programming as an
 expressive and productive alternative for game logic development.
-In Pingus, the game logic also accounts for almost half the size of the
-codebase (18.173 from 39.362 LoCs, or 46\%).
-
-rewriting Pingus to \CEU is to
-
-Contributions:
-    - present SSRP as an effective alternative for game logic dev
-    - qualitative analysis
-        - patterns
-            - solutions
-
+We present a case study of rewriting the game logic of Pingus from C++ to \CEU
+with the contributions that follow:
+%
+\begin{itemize}
+\item Identification of five recurrent control-flow patterns in the game logic
+      that likely apply to other games.
+\item Idiomatic solutions in \CEU for six selected behaviors in the game logic.
+\item An in-depth qualitative analysis of the proposed solutions in comparison
+      to C++.
+\end{itemize}
 
 \section{The Pingus Codebase}
 
@@ -221,36 +217,37 @@ misc/              56       46     1.22     miscellaneous functionality
 \end{figure*}
 
 In Pingus, the game logic also accounts for almost half the size of the
-codebase (18.173 from 39.362 LoCs, or 46\%).
-
-We rewrote 126 of the 272 files (46\%) which account for 9.186 of the 18.173
-LoCs (51\%) comprising the game logic of Pingus [[![X]][cpp\_uncompressed]].
-Half of the game logic relates to non-reactive code, such as configurations and
-options, saved games and serialization, maps and levels descriptions, string
-formatting, collision detection, graph algorithms, etc.
+codebase: 18.173 from 39.362 LoCs (46\%) spread in 272 files.
+%
+However, about half of the game logic relates to non-reactive code, such as
+configurations and options, saved games and serialization, maps and levels
+descriptions, string formatting, collision detection, graph algorithms, etc.
 This part remains unchanged and relies on the seamless integration between \CEU
-and C/C++ to remain usable.
-From the 9.186 touched LoCs, we removed all headers, declarations, trivial
-getters \& setters, and other innocuous statements, resulting in 70
-implementation files with 4.135 dense LoCs originally written in C++
-[[![X]][cpp\_compressed]].
-We did the same with the implementation in \CEU, resulting in 3.697 dense LoCs
-[[![X]][ceu\_compressed]].
-Figure~\ref{tab.tree} summarizes the condensed codebase in the two
-implementations:
-
-\footnote{ Game logic code: \url{https://github.com/fsantanna/pingus/tree/ceu/cmp/CPP} }.
-%[cpp_compressed]: https://github.com/fsantanna/pingus/tree/ceu/cmp/ALL
-%[ceu_compressed]: https://github.com/fsantanna/pingus/tree/ceu/cmp/ALL
+and C/C++~\cite{ceu.sensys13}.
+%
+Therefore, we rewrote 9.186 LoCs spread in 126 files%
+\footnote{Game logic codebase: \url{https://github.com/sbgames-anon/paper-2017/tree/master/cpp/}}.
+%
+In order to only consider effective code in the analysis, we then removed all
+headers, declarations, trivial getters \& setters, and other innocuous
+statements, resulting in 70 implementation files with 4.135 dense LoCs
+originally written in C++%
+\footnote{``Effective'' C++ codebase: \url{https://github.com/sbgames-anon/paper-2017/tree/master/all/}}.
+We did the same with the implementation in \CEU, resulting in 3.697 dense LoCs%
+\footnote{``Effective'' \CEU codebase: \url{https://github.com/sbgames-anon/paper-2017/tree/master/all/}}.
+%
+Figure~\ref{tab.tree} summarizes the effective codebase in the two
+implementations.
 
 This work focuses on a qualitative analysis for the programming techniques
 that we applied during the rewriting process.
 Not all techniques result in reduction in LoCs (especially considering the
 verbose syntax of \CEU), but have other effects such as eliminating shared
 variables and dependencies between classes.
-<!--, helping on encapsulation and cohesion.-->
-Nonetheless, the lowest ratio numbers above correlate to the parts of the game
-logic that we consider more susceptible to structured reactive programming.
+%<!--, helping on encapsulation and cohesion.-->
+Nonetheless, the lines with lower ratio numbers above correlate to the parts of
+the game logic that we consider more susceptible to structured reactive
+programming.
 For instance, the \emph{Pingu} behavior (\emph{ratio 0.80}) contains complex
 animations that are affected by timers, game rules, and user interaction.
 In contrast, the \emph{Option screen} (\emph{ratio 0.97}) is a simple UI grid
@@ -279,16 +276,16 @@ form of control-flow progression that cross multiple callback invocations.
 
 We selected 6 representative game behaviors and describe their
 implementations in C++ and \CEU.
-We also categorized these examples in 5 abstract C++ control-flow patterns that
+We also categorize these behaviors in 5 abstract control-flow patterns that
 likely apply to other games:
 
 \begin{enumerate}
 \item \emph{Finite State Machines}:
-    State machines describe the behavior of entities by mapping event
-    occurrences to transitions between states that trigger appropriate actions.
+    Event occurrences map to transitions between states that trigger
+    appropriate actions comprising the behavior of a game entity.
 \item \emph{Continuation Passing}:
     The completion of a long-lasting activity may carry a continuation, i.e.,
-    some action to execute next.
+    some action to execute next in the game.
 \item \emph{Dispatching Hierarchies}:
     Entities typically form a dispatching hierarchy in which a container that
     receives a stimulus automatically forwards it to its managed children.
@@ -1280,7 +1277,7 @@ end
 
 The \emph{mouse grab option} restricts the mouse movement to the game window
 boundaries%
-\footnote{Death of pingus animation: \url{https://github.com/sbgames-anon/paper-2017/blob/master/README.md#5} }.
+\footnote{Mouse grab animation: \url{https://github.com/sbgames-anon/paper-2017/blob/master/README.md#6} }.
 The option can be set anywhere in the game by pressing \emph{Ctrl-G}.
 In addition, the \emph{Options menu} has a check box to toggle the
 \emph{mouse grab option} with mouse clicks while still responding to
@@ -1365,6 +1362,8 @@ create infinite execution loops.
 \section{Related Work}
 
 \section{Conclusion}
+
+TODO: non reactive, C++ integration
 
 We promote the \emph{structured synchronous reactive} programming model of
 \CEU for the development of games.
