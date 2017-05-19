@@ -40,7 +40,7 @@ escapeinside={||},
     %breakatwhitespace=false,
     numbersep=2em,
     % C was used in the blocksworld example to refer to block C and nowhere else
-    emph={par,or,hor,do,end,loop,await,emit,input,event,call,with,%
+    emph={par,or,hor,do,end,loop,code,await,emit,input,event,call,with,%
           var,and,then,else,return,pure,deterministic,nohold,finalize,%
           class, every, FOREVER, this, spawn, in, pool, watching, until, 
           interface, each, abort, when, signal, PROC, CHAN, SIGNAL, PAR, not,
@@ -107,7 +107,7 @@ The objective of the game is to guide a group of penguins through a number of
 obstacles towards a designated exit%
 \footnote{Pingus gameplay: \url{https://www.youtube.com/watch?v=MKrJgIFtJX0}}.
 
-\begin{figure}
+\begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{pingus}
 \caption{Pingus gameplay.
@@ -132,7 +132,7 @@ it is the game logic that varies the most between projects.
 Sweeney states that ``will gladly sacrifice 10\% of our performance for 10\%
 higher productivity''.
 
-\begin{figure}
+\begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{sweeney}
 \caption{Three kinds of code~\cite{games.sweeney}.
@@ -181,9 +181,80 @@ terms of memory and CPU usage~\cite{ceu.sensys13}.
 The runtime is single threaded and the language requires no garbage
 collection.
 
+In this work, we advocate structured synchronous reactive programming as an
+expressive and productive alternative for game logic development.
+In Pingus, the game logic also accounts for almost half the size of the
+codebase (18.173 from 39.362 LoCs, or 46\%).
+
+rewriting Pingus to \CEU is to
+
 Contributions:
-    - patterns
-    - solutions
+    - present SSRP as an effective alternative for game logic dev
+    - qualitative analysis
+        - patterns
+            - solutions
+
+
+\section{The Pingus Codebase}
+
+In Pingus, the game logic also accounts for almost half the size of the
+codebase (18.173 from 39.362 LoCs, or 46\%).
+
+We rewrote 126 of the 272 files (46\%) which account for 9.186 of the 18.173
+LoCs (51\%) comprising the game logic of Pingus [[![X]][cpp\_uncompressed]].
+Half of the game logic relates to non-reactive code, such as configurations and
+options, saved games and serialization, maps and levels descriptions, string
+formatting, collision detection, graph algorithms, etc.
+This part remains unchanged and relies on the seamless integration between \CEU
+and C/C++ to remain usable.
+From the 9.186 touched LoCs, we removed all headers, declarations, trivial
+getters \& setters, and other innocuous statements, resulting in 70
+implementation files with 4.135 dense LoCs originally written in C++
+[[![X]][cpp\_compressed]].
+We did the same with the implementation in \CEU, resulting in 3.697 dense LoCs
+[[![X]][ceu\_compressed]].
+Figure~\ref{tab.tree} summarizes the condensed codebase in the two
+implementations:
+
+This work focuses on a qualitative analysis for the programming techniques
+that we applied during the rewriting process.
+Not all techniques result in reduction in LoCs (especially considering the
+verbose syntax of \CEU), but have other effects such as eliminating shared
+variables and dependencies between classes.
+<!--, helping on encapsulation and cohesion.-->
+Nonetheless, the lowest ratio numbers above correlate to the parts of the game
+logic that we consider more susceptible to structured reactive programming.
+For instance, the *Pingu* behavior (*ratio 0.80*) contains complex animations
+that are affected by timers, game rules, and user interaction.
+In contrast, the *Option* screen (*ratio 0.97*) is a simple UI grid with
+trivial mouse interactions.
+
+\begin{figure*}[t]
+\begin{verbatim}
+Path              Ceu      C++   Ceu/C++    Descritpion
+------------     ----     ----     ----     --------------------------------------------
+game/            2064     2268     0.91     the main gameplay
+  ./              710      679     1.05         main functionality
+  objs/           470      478     0.98         world objects (tiles, traps, etc)
+  pingu/          884     1111     0.80         pingu behaviors
+    ./            343      458     0.75             main functionality
+    actions/      541      653     0.83             pingu actions (bomber, climber, etc)
+worldmap/         468      493     0.95     campaign worldmap
+screens/         1109     1328     0.84     menus and screens
+    option/       347      357     0.97         option menu
+    others/       762      971     0.78         other menus and screens
+misc/              56       46     1.22     miscellaneous functionality
+                 ----     ----     ----
+                 3697     4135     0.89
+\end{verbatim}
+\caption{The Pingus codebase directory tree.
+\label{tab.tree}
+}
+\end{figure*}
+
+%[cpp_uncompressed]: https://github.com/fsantanna/pingus/tree/ceu/cmp/CPP
+%[cpp_compressed]: https://github.com/fsantanna/pingus/tree/ceu/cmp/ALL
+%[ceu_compressed]: https://github.com/fsantanna/pingus/tree/ceu/cmp/ALL
 
 \section{Control-Flow Patterns}
 
@@ -206,7 +277,7 @@ identifiers resembling verbs, statuses, and counters (e.g.,
 Good chances are that variables with these ``suspicious names'' encode some
 form of control-flow progression that cross multiple callback invocations.
 
-We selected 9 representative game behaviors and describe their
+We selected 6 representative game behaviors and describe their
 implementations in C++ and \CEU.
 We also categorized these examples in 5 abstract C++ control-flow patterns that
 likely apply to other games:
@@ -229,16 +300,11 @@ likely apply to other games:
     especially if there is no hierarchy relationship between them.
 \end{enumerate}
 
-\subsection{Finite State Machines \\ Case Study: The Armageddon Button Double Click}
-%\label{sec.patterns.fsm}
+\subsection{Finite State Machines}
 
-State machines describe the behavior of entities by mapping event occurrences
-to transitions between states that trigger appropriate actions.
+\textbf{Case Study: Detecting double-clicks in the \emph{Armageddon button}}
 
-%\subsection{The Armageddon Button Double Click}
-%\label{sec.patterns.fsm.armageddon}
-
-\begin{figure}
+\begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{double-click-opt}
 \caption{Double click detection.
@@ -246,11 +312,11 @@ to transitions between states that trigger appropriate actions.
 }
 \end{figure}
 
-In Pingus, a double click in the \emph{Armageddon} button at the bottom right
+In Pingus, a double click in the \emph{Armageddon button} at the bottom right
 of the screen literally explodes all pingus (Figure~\ref{fig.armageddon}).
-Figure~\ref{fig.armageddon.code} compares the implementations in C++ and \CEU.
+Figure~\ref{lst.armageddon} compares the implementations in C++ and \CEU.
 
-\begin{figure*}
+\begin{figure*}[t]
 \begin{minipage}[t]{0.55\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
 ArmageddonButton::ArmageddonButton(<...>):
@@ -304,7 +370,7 @@ do
         end
     end
     <...>
-    emit outer.game.go_armageddon;
+    emit game.go_armageddon;
 end
 
 
@@ -331,11 +397,8 @@ end
 \centering\small{\bx Implementation in \CEU}
 \end{minipage}
 %\rule{8.4cm}{0.37pt}
-\caption{ Shared-memory concurrency in \CEU:
-example \ax is safe because the trails access \code{x} atomically in different 
-reactions;
-example \bx is unsafe because both trails access \code{y} in the same reaction.
-\label{lst.shared}
+\caption{ Detecting double-clicks in the \emph{Armageddon button}.
+\label{lst.armageddon}
 }
 \end{figure*}
 
@@ -377,10 +440,11 @@ Also, even though the state variables are private, unrelated methods such as
 \code{draw}`, which is defined in middle of the class (ln. 10--12), can
 potentially access them.
 
-\begin{figure}
+\begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{double-click}
-\caption{State machine for the \emph{Armageddon} double click.
+\caption{State machine for detecting double-clicks in the
+         \emph{Armageddon button}.
 \label{fig.armageddon.fsm}
 }
 \end{figure}
@@ -401,15 +465,205 @@ self-contained in the \code{loop} body (ln. 4--10).
 Furthermore, these 7 lines of code \emph{only} detect the double click, leaving
 the actual effect to happen outside the loop (ln. 12).
 
-\subsection{Continuation Passing \\ Case Study: Advancing Pages in the Story Screen}
+\textbf{Case Study: The \emph{Bomber action} sequence}
 
-The completion of a long-lasting activity may carry a continuation, i.e., some
-action to execute next.
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{bomber-anim}
+\caption{ The \emph{Bomber action}.
+\label{fig.bomber.anim}
+}
+\end{figure}
 
-\begin{figure}
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{bomber-state}
+\caption{ State machine for the *Bomber* animation.
+\label{fig.bomber.state}
+}
+\end{figure}
+
+The \emph{Bomber action} explodes the clicked pingu, throwing particles around
+and also destroying the terrain under its radius (Figure~\ref{fig.bomber.anim}).
+%
+We can model the explosion animation with a sequential state machine
+(Figure~\ref{fig.bomber.state}) with actions associated to specific frames as
+follows:
+%
+\begin{enumerate}
+\item 0th frame:  plays a "Oh no!" sound.
+\item 10th frame: plays a "Bomb!" sound.
+\item 13th frame: throws particles, destroys the terrain, and shows an
+                  explosion sprite.
+\item Game tick:  hides the explosion sprite.
+\item Last frame: kills the pingu.
+\end{enumerate}
+
+TODO
+%*([This video][youtube_bomber] presents the sound effects.)*
+%[youtube_bomber]: https://youtu.be/QLXIT59il6o?t=306
+
+\begin{figure*}[t]
+\begin{minipage}[t]{0.55\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+Bomber::Bomber (Pingu* p) :
+    <...>
+    sprite(<...>),              // bomber sprite
+    sound_played(false),        // tracks state 2               @def_1
+    particle_thrown(false),     // tracks state 3
+    colmap_exploded(false),     // tracks state 3
+    gfx_exploded(false)         // tracks state 4               @def_2
+{
+    <...>
+    // 1. 0th frame: plays a "Oh no!" sound.
+    get_world()->play_sound("ohno", pingu->get_pos());          @sound_ohno
+}
+
+void Bomber::update () {                                        @update_ini
+    sprite.update();                                            @update_1
+    <...>   // pingu movement                                   @update_2
+
+    // 2. 10th frame: plays a "Bomb!" sound.                    @sound_bomb_1
+    if (sprite.get_current_frame()==10 && !sound_played) {
+        sound_played = true;
+        get_world()->play_sound("plop", pingu->get_pos());
+    }                                                           @sound_bomb_2
+
+    // 3. 13th frame: throws particles, destroys the terrain, shows an explosion sprite
+    if (sprite.get_current_frame()==13 && !particle_thrown) {   @state_3_1
+        particle_thrown = true;
+        get_world()->get_pingu_particle_holder()->add_particle(...);
+    }
+    if (sprite.get_current_frame()==13 && !colmap_exploded) {
+        colmap_exploded = true;
+        get_world()->remove(bomber_radius, <...>);
+    }                                                           @state_3_2
+
+    // 5. Last frame: kills the Pingu
+    if (sprite.is_finished ()) {                                @die_1
+        pingu->set_status(Pingu::PS_DEAD);
+    }                                                           @die_2
+}                                                               @update_end
+
+void Bomber::draw (SceneContext& gc) {
+    // 3. 13th frame: throws particles, destroys the terrain, shows an explosion sprite
+    // 4. Game tick: hides the explosion sprite
+    if (sprite.get_current_frame()==13 && !gfx_exploded) {      @state_3_3
+        gfx_exploded = true;                                    @state_3_4
+        gc.color().draw(explo_surf, <...>);                     @state_4
+    }
+    gc.color().draw(sprite, pingu->get_pos());
+}
+\end{lstlisting}
+\centering\small{\ax Implementation in C++}
+\end{minipage}
+%
+\begin{minipage}[t]{0.45\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+code/await Bomber (void) -> _ActionName__Enum
+do
+    <...>
+    spawn Mover();                          // spawn the pingu movement to execute in the "background"      @move
+
+    var&? Sprite s = spawn Sprite(<...>);   // spawn the bomber animation to execute in the "background"    @sprite
+    watching s do                                                   @watch-1
+        // 1. 0th frame: plays a "Oh no!" sound.                    @anim_1
+        {Sound::PingusSound::play_sound("ohno", 0.5, 0.0)};
+
+        // 2. 10th frame: plays a "Bomb!" sound.
+        await outer.game.dt until s!.sprite.frame == 10;            @frame_1
+        {Sound::PingusSound::play_sound("plop", 0.5, 0.0)};
+
+        // 3. 13th frame: throws particles, destroys the terrain, shows an explosion sprite
+        await outer.game.dt until s!.sprite.frame == 13;            @frame_2
+        spawn PinguParticles(<...>) in outer.pingu_particles;       @particles
+        call Game_Remove({&bomber_radius}, <...>);
+        do                                                          @do
+            <...>
+            spawn Sprite(<...>);            // explosion            @explo
+
+            // 4. Game tick: hides the explosion sprite
+            await outer.game.dt;                                    @frame_3
+        end                                                         @end
+        await FOREVER;
+    end                                                             @watch-2
+
+    // 5. Last frame: kills the pingu
+    escape {ActionName::DEAD};                                      @anim_2
+end
+\end{lstlisting}
+\centering\small{\bx Implementation in \CEU}
+\end{minipage}
+%\rule{8.4cm}{0.37pt}
+\caption{ Advancing pages in the \emph{Story Screen}.
+\label{lst.story}
+}
+\end{figure*}
+
+In C++, the class \code{Bomber} defines the callbacks \code{draw} and
+\code{update} to manage the state machine described above:
+%
+The class first defines one state variable for each action to perform
+(ln. 4--7).
+The ``Oh no!'' sound plays as soon as the object starts in \emph{state-1} 
+(ln. 11).
+The \code{update} callback (ln. 14--38) updates the pingu animation and
+movement on every frame regardless of its current state (ln. 15--16).
+When the animation reaches the 10th frame, it plays the ``Bomb!'' sound and 
+switches to \emph{state-2} (ln. 18--22).
+The state variable \code{sound\_played} is required because the sprite frame
+doesn't necessarily advance on every \code{update} invocation (e.g.,
+\code{update} may execute twice during the 10th frame).
+The same reasoning and technique applies to \emph{state-3} (ln. 25--32 and
+43--44).
+The explosion sprite appears in a single frame in \emph{state-4} (ln. 45).
+Finally, the pingu dies after the animation frames terminate (ln. 35--37).
+%
+Note that a single numeric state variable suffices to track the states, but the
+original authors probably chose to encode each state in an independent boolean 
+variable to rearrange and experiment with them during development.
+Still, due to the short-lived nature of callbacks, state variables are 
+unavoidable and are actually the essence of object-oriented programming
+(i.e., *methods + mutable state*).
+%
+Like the C++ implementation for detecting double clicks, note also that the
+state machine is encoded across 3 different methods, each intermixing code with
+unrelated functionality.
+
+The equivalent code for the \emph{Bomber action} in \CEU doesn't require state
+variables and reflects the sequential state machine implicitly, using
+\code{await} statements in direct style to separate the actions.
+%
+The \code{Bomber} is a \code{code/await} abstraction of \CEU, which is similar
+to a coroutine~\cite{sync_async.cooperative}: a subroutine that retains runtime
+state, such as local variables and the program counter, across reactions to
+events (i.e., across \code{await} statements).
+The pingu movement and sprite animation are isolated in two other abstractions
+and execute in separate through the \code{spawn} primitive (ln. 4,6).
+The event \code{game.dt} (ln. 12,16,24) is analogous to the \code{update}
+callback of C++ and occurs on every frame.
+%
+The code tracks the animation instance (ln. 7--27), performing the last bomber
+action on termination (ln. 30).
+As soon as the animation starts, the code performs the first action (ln. 8).
+The intermediate actions are performed when the corresponding conditions occur
+(ln. 12,16,24).
+The \code{do-end} block (ln. 19--25), restricts the lifespan of the
+single-frame explosion sprite (ln. 21): after the next game tick (ln. 24), the
+block terminates and automatically destroys the spawned abstraction (removing
+it from the screen).
+%
+In contrast with the implementation in C++, all actions happen in a contiguous
+chunk of code (ln. 6--30) which handles no extra functionality.
+
+\subsection{Continuation Passing}
+
+\textbf{Case Study: Advancing Pages in the \emph{Story screen}}
+
+\begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{story-anim}
-\caption{The Story screen.
+\caption{The \emph{Story screen}.
 \label{fig.story}
 }
 \end{figure}
@@ -424,7 +678,7 @@ A second click advances to the next page, until the story terminates.
 If the page completes before a click (due to the time elapsing), a first click 
 advances to the next page.
 
-\begin{figure*}
+\begin{figure*}[t]
 \begin{minipage}[t]{0.55\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
 StoryScreenComponent::StoryScreenComponent (<...>) :
@@ -440,7 +694,7 @@ StoryScreenComponent::StoryScreenComponent (<...>) :
 
 void StoryScreenComponent::update (<...>) {
     <...>
-    if (&lt;all-words-appearing&gt;) {
+    if (<all-words-appearing>) {
         displayed = true;
     }
 }
@@ -504,18 +758,15 @@ end
 \centering\small{\bx Implementation in \CEU}
 \end{minipage}
 %\rule{8.4cm}{0.37pt}
-\caption{ Shared-memory concurrency in \CEU:
-example \ax is safe because the trails access \code{x} atomically in different 
-reactions;
-example \bx is unsafe because both trails access \code{y} in the same reaction.
-\label{lst.shared}
+\caption{ Advancing pages in the \emph{Story Screen}.
+\label{lst.story}
 }
 \end{figure*}
 
-\begin{figure}
+\begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{story}
-\caption{State machine for the Story screen.
+\caption{State machine for advancing pages in the \emph{Story screen}.
 \label{fig.story}
 }
 \end{figure}
@@ -557,12 +808,11 @@ Note that, unlike the implementation in C++, the ``advancing text'' behavior is
 not intermixed with the ``advancing pages'' behavior, instead, it is
 encapsulated inside the inner loop nested with a deeper indentation (ln. 9).
 
-\subsection{Dispatching Hierarchies \\ Case Study: Bomber `draw` and `update` callbacks}
+\subsection{Dispatching Hierarchies}
 
-Entities typically form a dispatching hierarchy in which a container that
-receives a stimulus automatically forwards it to its managed children.
+\textbf{Case Study: Bomber `draw` and `update` callbacks}
 
-\begin{figure*}
+\begin{figure*}[t]
 \begin{minipage}[t]{0.50\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
 class Bomber : public PinguAction {
@@ -594,6 +844,19 @@ code/await Bomber (void) -> ActionName do
     var&? Sprite sprite = spawn Sprite(<...>);
     <...>
 end
+
+
+
+
+
+
+
+
+
+
+
+
+.
 \end{lstlisting}
 \centering\small{\bx Implementation in \CEU}
 \end{minipage}
@@ -606,15 +869,7 @@ example \bx is unsafe because both trails access \code{y} in the same reaction.
 }
 \end{figure*}
 
-\begin{figure}
-\centering
-\includegraphics[width=\columnwidth]{story}
-\caption{State machine for the Story screen.
-\label{fig.story}
-}
-\end{figure}
-
-\begin{figure}
+\begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{hierarchy}
 \caption{Dispatching chain for \code{update}.
@@ -683,12 +938,23 @@ animation is also alive.
 The radical decoupling between the program hierarchy and reactions to events
 eliminates dispatching chains entirely.
 
-\subsection{Lifespan Hierarchies \\ Case Study: The Pingus Container}
+\subsection{Lifespan Hierarchies}
 
-Entities typically form a lifespan hierarchy in which a terminating
-container entity automatically destroys its managed children.
+\textbf{Case Study: The Pingus Container}
 
-\begin{figure*}
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{pingus_create_die-anim}
+\caption{Creation and death of pingus.
+\label{fig.pingus_create_die}
+}
+\end{figure}
+
+A pingu is a dynamic entity created periodically and destroyed under certain
+conditions, such as falling from a high altitude
+(Figure~\ref{pingus_create_die}).
+
+\begin{figure*}[t]
 \begin{minipage}[t]{0.50\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
 Pingu* PinguHolder::create_pingu (<...>) {
@@ -702,36 +968,36 @@ void PinguHolder::update() {
     <...>
     while(pingu != pingus.end()) {
         (*pingu)->update();
-        if ((*pingu)->get_status() == Pingu::PS_DEAD) {
+        if ((*pingu)->get_status() == PS_DEAD) {
             pingu = pingus.erase(pingu);
         }
         <...>
         ++pingu;
     }
 }
+
+.
 \end{lstlisting}
 \centering\small{\ax Implementation in C++}
 \end{minipage}
 %
-\begin{minipage}[t]{0.40\linewidth}
+\begin{minipage}[t]{0.50\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
 code/await Game (void) do
     <...>
     pool[] Pingu pingus;
     code/await Pingu_Spawn (<...>) do
         <...>
-        spawn Pingu(<...>) in outer.pingus;
+        spawn Pingu(<...>) in pingus;
     end
     <...>   // code invoking Pingu_Spawn
 end
 
-TODO
-
 code/await Pingu (<...>) do
     <...>
     loop do
-        await outer.game.dt;
-        if call Pingu_Rel_Getpixel(0,-1) == {Groundtype::GP_OUTOFSCREEN} then
+        await game.dt;
+        if Pingu_Is_Out_Of_Screen() then
             <...>
             escape {PS_DEAD};
         end
@@ -749,14 +1015,6 @@ example \bx is unsafe because both trails access \code{y} in the same reaction.
 }
 \end{figure*}
 
-\begin{figure}
-\centering
-\includegraphics[width=\columnwidth]{story}
-\caption{State machine for the Story screen.
-\label{fig.story}
-}
-\end{figure}
-
 In C++, the class \code{PinguHolder} is a container that holds all pingus
 alive.
 %
@@ -772,12 +1030,12 @@ Without the \code{erase} call above, a dead pingu would remain in the
 collection with updates on every frame (ln. 11).
 Since the \code{redraw} behavior for a dead pingu is innocuous, the death could
 go unnoticed but the program would keep consuming memory and CPU time.
-This problem is known as the \emph{lapsed listener}~\cite{TODO} and also occurs
-in languages with garbage collection:
+This problem is known as the \emph{lapsed listener}~\cite{games.patters} and
+also occurs in languages with garbage collection:
 A container typically holds a strong reference to a child (sometimes the only 
 reference to it), and the runtime cannot magically detect it as garbage.
 
-\begin{figure}
+\begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{pool}
 \caption{Lifespan of dynamic instances.
@@ -813,17 +1071,16 @@ containers or explicit deallocation.
 To remove a pingu from the game in \CEU, we just need to terminate its execution
 block according to the appropriate conditions:
 %
-The \code{escape} statement (ln. TODO) aborts the execution block of the
+The \code{escape} statement (ln. 17) aborts the execution block of the
 \code{Pingu} instance, removing it from its associated pool automatically.
 Hence, a dynamic instance that terminates naturally leaves no traces in the 
 program.
 
-\subsection{Signaling Mechanisms\\ Case Study: Global Keys and the Options Menu}
+\subsection{Signaling Mechanisms}
 
-Entities often need to communicate explicitly through signaling mechanisms,
-especially if there is no hierarchy relationship between them.
+\textbf{Case Study: Global Keys and the Options Menu}
 
-\begin{figure}
+\begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{options-anim-opt}
 \caption{The \emph{Mouse Grab} configuration option.
@@ -837,9 +1094,9 @@ The option can be set anywhere in the game by pressing *Ctrl-G*.
 In addition, the *Options* menu has a check box to toggle the *Mouse Grab*
 option with mouse clicks while still responding to *Ctrl-G* presses.
 
-\begin{figure}
+\begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{options-anim-opt}
+\includegraphics[width=\columnwidth]{events}
 \caption{Mutual dependency between signals.
 \label{fig.events}
 }
@@ -851,16 +1108,16 @@ appropriate side effects in the game (i.e., restrict the mouse movement).
 Figure~\ref{fig.events} illustrates how the mutual notifications create a 
 dependency cycle between the configuration manager and the check box.
 
-\begin{figure*}
+\begin{figure*}[t]
 \begin{minipage}[t]{0.50\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
-void GlobalEvent::on_button_press (<...>) {
+void GlbEvt::on_button_press (<...>) {
     <...>
     switch (event.keysym.sym) {
-        case SDLK_g:
-            if (keystate[SDLK_LCTRL] || keystate[SDLK_RCTRL]) {
-                config_manager.set_mouse_grab(          @ctrl_g_cpp
-                    !config_manager.get_mouse_grab());
+        case K_g:
+            if (keys[K_LCTRL] || keys[K_RCTRL]) {
+                cfgmgr.set_grab(
+                    !cfgmgr.get_grab());
             }
             break;
         <...>
@@ -869,74 +1126,76 @@ void GlobalEvent::on_button_press (<...>) {
 
 ///
 
-boost::signals2::signal<void(bool)> on_mouse_grab_change;   // definition in `config_manager.h` @signal_def
+boost::signal<void(bool)> on_grab_change;
 
-void ConfigManager::set_mouse_grab (bool v) {   @set_mouse_grab
+void CfgMgr::set_grab (bool v) {
     <...>
-    if (v != get_mouse_grab()) {                @if_1
+    if (v != get_grab()) {
         <...>   // the actual "grab" effect
-        on_mouse_grab_change(v);                @signal
-    }                                           @if_2
+        on_grab_change(v);
+    }
 }
 
 ///
 
-boost::signals2::signal<void (bool)> on_change;   // definition in `check_box.hpp`
+boost::signal<void (bool)> on_change;
 
-void CheckBox::set_state (bool is_on, bool send_signal) {   @last_argument
+void ChkBox::set (bool on, bool sndsig) {
     <...>   // switches the check box state
-    if (send_signal) {      @if_cb_1
-        on_change(is_on);
-    }                       @if_cb_2
+    if (sndsig) {
+        on_change(on);
+    }
 }
 
 ///
 
-typedef std::vector&lt;boost::signals2::connection&gt; Connections;   // definition in `option_menu.hpp`
-Connections connections;                                        // definition in `option_menu.hpp`
+typedef std::vector<boost::connection> Conns;
+Conns conns;
 
 OptionMenu::OptionMenu() :
-    connections(),
-    mousegrab_box(),
+    conns(),
+    grab_box(),
     <...>
 {
-    mousegrab_box = new CheckBox(<...>);
-    connections.push_back(                              @bind_11
-        config_manager.on_mouse_grab_change.connect(
-            std::bind(&CheckBox::set_state, mousegrab_box, <...>, false); @bind_false
+    grab_box = new ChkBox(<...>);
+    conns.push_back(
+        cfgmgr.on_grab_change.connect(
+            std::bind(&ChkBox::set, grab_box, <...>, false);
         )
-    );                                                  @bind_12
-    connections.push_back(                              @bind_21
-        mousegrab_box->on_change.connect(
-            std::bind(&ConfigManager::set_mouse_grab, &config_manager, <...>);
+    );
+    conns.push_back(
+        grab_box->on_change.connect(
+            std::bind(&CfgMgr::set_grab, &cfgmgr, <...>);
         )
-    );                                                  @bind_22
+    );
     <...>
 
 }
 
-OptionMenu::~OptionMenu() {     @destr_1
-    for (Connections::iterator i=connections.begin(); i!=connections.end(); ++i) {
+OptionMenu::~OptionMenu() {
+    for (Conns::iterator i=conns.begin();
+                         i!=conns.end();
+                         ++i) {
         (*i).disconnect();
     }
-}                               @destr_2
+}
 
 
 \end{lstlisting}
 \centering\small{\ax Implementation in C++}
 \end{minipage}
 %
-\begin{minipage}[t]{0.40\linewidth}
+\begin{minipage}[t]{0.50\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
 spawn do
     var _SDL_KeyboardEvent&& e;
     every e in SDL_KEYDOWN do
-        var _u8&& keystate = _SDL_GetKeyState(null);
+        var _u8&& keys = _SDL_GetKeyState(null);
         <...>
-        if e:keysym.sym == {SDLK_g} then
-            if ((keystate[{SDLK_LCTRL}] as bool) or (keystate[{SDLK_RCTRL}] as bool)) then
-                emit config_manager.go_mouse_grab(    @ctrl_g_ceu
-                        not ({config_manager.get_mouse_grab()} as bool));
+        if e:keysym.sym == K_g then
+            if keys[K_LCTRL] or keys[K_RCTRL] then
+                emit cfgmgr.go_grab(
+                        not {cfgmgr.get_grab()});
             end
         end
         <...>
@@ -945,37 +1204,37 @@ end
 
 ///
 
-data ConfigManager with
-    event bool go_mouse_grab;
+data CfgMgr with
+    event bool go_grab;
 end
-var ConfigManager config_manager = val ConfigManager(_);
+var CfgMgr cfgmgr = val CfgMgr(_);
 
 spawn do
     var bool v;
-    every v in config_manager.go_mouse_grab do
+    every v in cfgmgr.go_grab do
         <...>   // the actual "grab" effect
     end
 end
 
 ///
 
-data ICheckBox with
+data IChkBox with
     var   bool is_on;
     event bool go_click;
 end
 
-code/await CheckBox (<...>) -> (var ICheckBox checkbox) -> FOREVER do
-    checkbox = val ICheckBox(<...>);
+code/await ChkBox (<...>) -> (var IChkBox chkbox) -> FOREVER do
+    chkbox = val IChkBox(<...>);
     <...>
     par do
-        every c.component.on_click do                   @every_1
-            emit checkbox.go_click(not checkbox.is_on); @dir_class_app
-        end                                             @every_2
+        every c.component.on_click do
+            emit chkbox.go_click(not chkbox.is_on);
+        end
     with
-        loop do                                         @loop_1
+        loop do
             <...>   // switches the check box state
-            checkbox.is_on = await checkbox.go_click;   @dir_app_class
-        end                                             @loop_2
+            chkbox.is_on = await chkbox.go_click;
+        end
     end
 end
 
@@ -983,18 +1242,18 @@ end
 
 code/await OptionMenu <...> do
     <...>
-    var& CheckBox b2 = <...>;
+    var& ChkBox b2 = <...>;
     spawn do
         par do
             var bool v;
-            every v in outer.config_manager.go_mouse_grab do    @loop_11
-                emit b2.checkbox.go_click(v);
-            end                                                 @loop_12
+            every v in cfgmgr.go_grab do
+                emit b2.chkbox.go_click(v);
+            end
         with
             var bool v;
-            every v in b2.checkbox.go_click do                  @loop_21
-                emit outer.config_manager.go_mouse_grab(v);
-            end                                                 @loop_22
+            every v in b2.chkbox.go_click do
+                emit cfgmgr.go_grab(v);
+            end
         end
     end
     <...>
@@ -1012,78 +1271,73 @@ example \bx is unsafe because both trails access \code{y} in the same reaction.
 }
 \end{figure*}
 
-In C++, the class `GlobalEvent` detects *Ctrl-G*
-presses and invokes the callback `config\_manager.set\_mouse\_grab`:
+In C++, the class `GlbEvt` detects \emph{Ctrl-G} presses and invokes the
+callback \code{config\_manager.set\_grab} (ln. 5--8).
 %
-The class `ConfigManager` uses a `boost::signal`
-[[![X]][boost\_signal]] to notify the application when the new configuration is
-applied:
+The class `CfgMgr` uses a \code{boost::signal} (ln. 16) to notify the
+application when the new configuration is applied (ln. 22).
 %
-The `if` enclosing the signal emission @NN(if\_1,-,if\_2) breaks the dependency 
+The \code{if} enclosing the signal emission (ln. 20--23) breaks the dependency 
 cycle of Figure~\ref{fig.events} and prevents an infinite execution loop.
 %
-The class `CheckBox` also uses a `boost::signal` to 
-notify the application on changes:
+The class \code{ChkBox} also uses a \code{boost::signal} (ln. 28) to notify
+the application on changes (ln. 33).
 %
-Again, the `if` enclosing the signal emission @NN(if\_cb\_1,-,if\_cb\_2) breaks the 
+Again, the \code{if} enclosing the signal emission (ln. 32--34) breaks the 
 dependency cycle of Figure~\ref{fig.events} to avoid infinite execution.
 %
-The class `OptionMenu` creates the dependency loop by
-connecting the two signals:
+The class \code{OptionMenu} creates the dependency loop by connecting the two
+signals.
 %
 The constructor binds
-the signal `config\_manager.on\_mouse\_grab\_change` to the callback method
-           `mousegrab\_box->set\_state`
-           @NN(bind\_11,-,bind\_12),
+the signal \code{config\_manager.on\_grab\_change} to the callback
+    method \code{grab\_box->set} (ln. 48--52),
 and also
-the signal `mousegrab\_box->on\_change` to the callback method
-           `config\_manager.set\_mouse\_grab`
-           @NN(bind\_21,-,bind\_22).
-This way, every time the `ConfigManager` signals `on\_mouse\_grab\_change`
-(`ConfigManager`, ln. @N(signal) [up](\#cpp\_config-manager)), `set\_state` is
-implicitly called.
-The same happens between the signal `on\_change` in the `CheckBox` and the 
-method `set\_mouse\_grab` in the `ConfigManager`
-(`ConfigManager`, ln. @N(set\_mouse\_grab) [up](\#cpp\_config-manager)).
+the signal \code{grab\_box->on\_change} to the callback method
+    \code{config\_manager.set\_grab} (ln. 53--57).
+This way, every time the \code{CfgMgr} signals
+\code{on\_grab\_change} (ln. 22), the method \code{set} is implicitly called.
+The same happens between the signal \code{on\_change} in the \code{ChkBox}
+and the method \code{set\_grab} in the \code{CfgMgr} (ln. 18).
 %
-Note that the signal binding to call `CheckBox::set\_state` @NN(bind\_false) 
-receives a fixed value `false` as the last argument to prevent infinite
-execution (`CheckBox`, ln. @N(last\_argument) [up](\#cpp\_check-box)).
+Note that the signal binding to call \code{ChkBox::set} (ln. 50) receives a
+fixed value \code{false} as the last argument to prevent infinite execution
+(ln. 30).
 %
-The destructor @NN(destr\_1,-,destr\_2) breaks the connections explicitly when
-the *Option* screen terminates.
+The \code{OptionMenu} destructor (ln. 62--66) breaks the connections explicitly
+when the \emph{Option screen} terminates.
 
-In \CEU, a *Ctrl-G* key press broadcasts the internal event
-`config\_manager.go\_mouse\_grab` to the application [[![X]][ceu\_global\_event]]:
+In \CEU, a \emph{Ctrl-G} key press broadcasts the internal event
+\code{config\_manager.go\_grab} to the application (ln. 8).
 %
-The configuration manager [[![X]][ceu\_config\_manager]] just needs to react to
-`go\_mouse\_grab` continuously to perform the *grab* effect:
+The configuration manager just needs to react to \code{go\_grab}
+continuously to perform the *grab* effect (ln. 25--27).
 %
-The `CheckBox` [[![X]][ceu\_check\_box]] exposes the event `go\_click` for 
-notifications in both directions, i.e., from the abstraction to the application
-and *vice versa*:
+The \code{ChkBox} exposes the event \code{go\_click} for notifications in
+both directions, i.e., from the abstraction to the application and
+\emph{vice versa}:
 %
-The abstraction reacts to external clicks continuously @NN(every\_1,-,every\_2)
-to broadcast the event `go\_click` @NN(dir\_class\_app).
-It also reacts continuously to `go\_click` in another line of execution
-@NN(loop\_1,-,loop\_2), which awakes from notifications from the first line of
-execution or from the application.
+The abstraction reacts to external clicks continuously (ln. 41--43) to
+broadcast the event \code{go\_click} (ln. 47).
+It also reacts continuously to \code{go\_click} in another line of execution
+(ln. 45--48), which awakes from notifications from the first line of execution
+or from the application.
 %
-The `OptionMenu` [[![X]][ceu\_option\_menu]] connects the two events as 
-follows:
+The \code{OptionMenu} connects the two events as follows:
 %
 The two loops in parallel handle the connections in opposite directions:
-from the configuration manager to the check box @NN(loop\_11,-,loop\_12);
+from the configuration manager to the check box (ln. 60--62);
 and
-from the check box to the configuration manager @NN(loop\_21,-,loop\_22).
+from the check box to the configuration manager (ln. 65--67).
 %
-When the *Option* screen terminates, the connections break automatically since
-the body is automatically aborted.
+When the \emph{Option screen} terminates, the connections break automatically
+since the body with the two loops is automatically aborted.
 %
 Note that the implementation in \CEU does not check event emits to break the
 dependency cycle and prevent infinite execution.
-Due to the [stack-based execution for internal events][ceu\_stack] in \CEU,
-programs with mutually-dependent events do not create infinite execution loops.
+Due to the stack-based execution for internal events in
+\CEU~\cite{ceu.sensys13)}, programs with mutually-dependent events do not
+create infinite execution loops.
 
 \section{Related Work}
 
@@ -1110,9 +1364,8 @@ concurrency model to handle event-based applications.
 
 \section{Acknowledgments}
 
-[Leonardo Kaplan](https://github.com/leokaplan/) and
-[Alexander Tkachov](https://github.com/Tkachov/)
-for early explorations and prototypes.
+We would like to thank Leonardo Kaplan and Alexander Tkachov for early
+explorations and prototypes of the game rewrite.
 
 \bibliographystyle{abbrv}
 \bibliography{my,other}
