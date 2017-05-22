@@ -156,8 +156,6 @@ In this sense, callbacks actually disrupt structured programming, becoming
 %\footnote{``Escape from Callback Hell'':
 %\url{elm-lang.org/learn/Escape-from-Callback-Hell.elm}}
 
-TODO: OO state + methods
-
 \CEU~\cite{ceu.sensys13,ceu.mod15} is a programming language that offers a
 concurrent and expressive alternative to C/C++ with the characteristics that
 follow:
@@ -186,29 +184,53 @@ We present a case study of rewriting Pingus from C++ to \CEU with the
 contributions as follows:
 %
 \begin{itemize}
-\item Identification of five recurrent control-flow patterns that likely apply
-      to other games.
-\item Idiomatic code in \CEU for six selected behaviors in the game logic.
-\item An in-depth qualitative analysis of the implementations in \CEU in
-      comparison to C++.
+\item Identifying five recurrent control-flow patterns that likely apply to
+      other games:
+        \emph{Finite State Machines},
+        \emph{Continuation Passing},
+        \emph{Dispatching Hierarchies},
+        \emph{Lifespan Hierarchies},
+        \emph{Signaling Mechanisms}.
+\item Applying idiomatic code in \CEU as alternative solutions for six selected
+      behaviors in the game logic.
+\item Presenting an in-depth qualitative analysis of the proposed solutions in
+      comparison to the original implementations in C++.
 \end{itemize}
-
-TODO: falar mais sobre as 3 contribuicoes:
-- control-flow patterns
-    - o que eh isso
-        - definir controle
-    - como eh diferente de GoF
-        - behavioral patterns
-- ideia geral das solucoes
-    - eliminar estados explicitos com estruturas de controle apropriadas
-- o que eh analise qualitativa
-    - como medimos
+%
+A control-flow pattern is a recurring technique to describe dependencies and
+explicit orders between statements (or groups of statements) in a program.
+For instance, consider how a key press stimulus propagates through the game
+entities and also what happens with them if the stimulus causes the end of the
+game.
+%
+\CEU supports primitives that help describing complex control-flow
+relationships in the game logic more concisely.
+%
+The rewriting process consisted of identifying sets of callbacks implementing
+control flow in the game and translating them to \CEU using appropriate
+structured constructs.
+%
+As an example, a double mouse click is characterized by a first click, followed
+by a maximum amount of time, followed by a second click.
+This behavior depends on different events (clicks and timers) which have to
+occur in a particular order.
+In C++, the implementation involves callbacks crossing reactions to successive
+events which manipulate state variables explicitly.
+%
+Although we documented in detail two use cases for each of the five patterns,
+in this work we only present six cases due to space constraints.
+%
+This work focuses on a qualitative analysis for the programming techniques
+that we applied during the rewriting process.
+Not all techniques result in reduction in LoCs (especially considering the
+verbose syntax of \CEU), but have other effects such as eliminating shared
+variables and dependencies between classes.
 
 The rest of the paper is organized as follows:
 Section~\ref{sec.codebase} gives an overview of the Pingus codebases in C++ and
 \CEU.
 Section~\ref{sec.patterns} describes the five control-flow patterns and
-discusses six case studies.
+discusses six case studies in detail.
 Section~\ref{sec.related} discusses related work.
 Section~\ref{sec.conclusion} concludes the paper.
 
@@ -261,6 +283,7 @@ We did the same with the implementation in \CEU, resulting in 3.697 dense LoCs%
 Figure~\ref{tab.tree} summarizes the effective codebase in the two
 implementations.
 
+%%%
 This work focuses on a qualitative analysis for the programming techniques
 that we applied during the rewriting process.
 Not all techniques result in reduction in LoCs (especially considering the
@@ -274,6 +297,7 @@ For instance, the \emph{Pingu} behavior (\emph{ratio 0.80}) contains complex
 animations that are affected by timers, game rules, and user interaction.
 In contrast, the \emph{Option screen} (\emph{ratio 0.97}) is a simple UI grid
 with trivial mouse interactions.
+%%%
 
 \section{Control-Flow Patterns \& Case Studies}
 \label{sec.patterns}
@@ -282,15 +306,8 @@ TODO: state pattern, FSM
       strategy/visitor pattern, polymorhpism, hierarchies
       observer pattern, signaling
 
-The rewriting process consisted of identifying sets of callbacks implementing
-\emph{control-flow behaviors} in the game and translating them to \CEU using
-appropriate structured constructs.
-As an example, a double mouse click is characterized by a first click, followed
-by a maximum amount of time, followed by a second click.
-This behavior depends on different events (clicks and timers) which have to
-occur in a particular order.
-In C++, the implementation involves callbacks crossing reactions to successive
-events which manipulate state variables explicitly.
+
+use cases first -> patterns later
 
 We can identify control-flow behaviors in C++ by looking for class members with
 identifiers resembling verbs, statuses, and counters (e.g.,
@@ -320,8 +337,9 @@ likely apply to other games:
     Entities form a lifespan hierarchy in which a terminating container entity
     automatically destroys its managed children.
 \item \emph{Signaling Mechanisms}:
-    Entities often need to communicate explicitly through signaling mechanisms,
-    especially if there is no hierarchy relationship between them.
+    Entities often need to communicate and affect each other explicitly through
+    signaling mechanisms, especially if there is no hierarchy relationship
+    between them.
 \end{enumerate}
 
 \subsection{Finite State Machines}
@@ -1416,6 +1434,9 @@ games
 - also, not identifying and applying, but applying in idiomatic code in another
   language
 
+    - como eh diferente de GoF
+        - not much unlike behavioral patterns
+
 Design patterns for games can be approached from two dif-
 ferent perspectives; firstly as patterns used for describing
 the game mechanics (gameplay and game rules) and sec-
@@ -1440,6 +1461,8 @@ TODO:
 \label{sec.conclusion}
 
 TODO: non reactive, C++ integration
+- TODO: OO state + methods
+- eliminar estados explicitos com estruturas de controle apropriadas
 
 We promote the \emph{structured synchronous reactive} programming model of
 \CEU for the development of games.
