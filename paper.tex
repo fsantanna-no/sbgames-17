@@ -120,8 +120,8 @@ the engine, level editor, auxiliary libraries, and the game logic itself.
 
 According to Tim Sweeney (of Unreal Engine fame), about half the complexity in
 game development resides in \emph{simulation} (aka \emph{game logic}), but
-which accounts for only 10\% of the CPU budget~\cite{games.sweeney}
-(Figure~\ref{fig.sweeney}).
+which accounts for only 10\% of the CPU budget~\cite{games.sweeney}.
+%(Figure~\ref{fig.sweeney}).
 %The game logic ``models the state of the game world as interacting objects
 %evolve over time''.
 The high development costs contrasting with the low impact on performance
@@ -130,13 +130,13 @@ it is the game logic that varies the most between projects.
 Sweeney states that ``will gladly sacrifice 10\% of our performance for 10\%
 higher productivity''.
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{sweeney}
-\caption{Three kinds of code~\cite{games.sweeney}.
-\label{fig.sweeney}
-}
-\end{figure}
+%\begin{figure}[t]
+%\centering
+%\includegraphics[width=\columnwidth]{sweeney}
+%\caption{Three kinds of code~\cite{games.sweeney}.
+%\label{fig.sweeney}
+%}
+%\end{figure}
 
 Object-oriented games rely on the \emph{observer pattern}~\cite{games.patterns}
 to handle events from the environment (e.g., key presses and timers) and also
@@ -283,21 +283,13 @@ We did the same with the implementation in \CEU, resulting in 3.697 dense LoCs%
 Figure~\ref{tab.tree} summarizes the effective codebase in the two
 implementations.
 
-%%%
-This work focuses on a qualitative analysis for the programming techniques
-that we applied during the rewriting process.
-Not all techniques result in reduction in LoCs (especially considering the
-verbose syntax of \CEU), but have other effects such as eliminating shared
-variables and dependencies between classes.
-%<!--, helping on encapsulation and cohesion.-->
-Nonetheless, the lines with lower ratio numbers above correlate to the parts of
-the game logic that we consider more susceptible to structured reactive
-programming.
+Although the sections that follow compare the codebases a qualitatively, the
+lines with lower ratio numbers above correlate to the parts of the game logic
+that we consider more susceptible to structured reactive programming.
 For instance, the \emph{Pingu} behavior (\emph{ratio 0.80}) contains complex
 animations that are affected by timers, game rules, and user interaction.
 In contrast, the \emph{Option screen} (\emph{ratio 0.97}) is a simple UI grid
 with trivial mouse interactions.
-%%%
 
 \section{Control-Flow Patterns \& Case Studies}
 \label{sec.patterns}
