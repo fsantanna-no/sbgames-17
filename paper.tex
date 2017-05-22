@@ -156,6 +156,8 @@ In this sense, callbacks actually disrupt structured programming, becoming
 %\footnote{``Escape from Callback Hell'':
 %\url{elm-lang.org/learn/Escape-from-Callback-Hell.elm}}
 
+TODO: OO state + methods
+
 \CEU~\cite{ceu.sensys13,ceu.mod15} is a programming language that offers a
 concurrent and expressive alternative to C/C++ with the characteristics that
 follow:
@@ -340,7 +342,6 @@ TODO: falar do state pattern, citar game.patterns, falar que usa estado explicit
 In Pingus, a double click in the \emph{Armageddon button} at the bottom right
 of the screen literally explodes all pingus.%
 \footnote{Double click animation: \url{github.com/an000/p/blob/master/README.md#1} }
-Figure~\ref{lst.armageddon} compares the implementations in C++ and \CEU.
 
 \begin{figure*}[t]
 \begin{minipage}[t]{0.55\linewidth}
@@ -374,7 +375,7 @@ void ArmageddonButton::update (float delta) {
 
 void ArmageddonButton::on_click (<...>) {
     if (pressed) {
-        server->send_armageddon_event();
+        send_armageddon_event();
     } else {
         pressed = true;
     }
@@ -386,7 +387,7 @@ void ArmageddonButton::on_click (<...>) {
 \begin{minipage}[t]{0.45\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
 do
-    var& RectComponent c = <...>;
+    var RectComponent c = <...>;
     <...>
     loop do
         await c.component.on_click;
@@ -428,17 +429,18 @@ end
 }
 \end{figure*}
 
-In C++, the class \code{ArmageddonButton} implements methods for rendering the
-button and handling mouse and timer events.
-The listing focus on the double click detection, hiding unrelated parts with
+Figure~\ref{lst.armageddon}.a shows the C++ implementation for the class
+\code{ArmageddonButton} with methods for rendering the button and handling
+mouse and timer events.
+The code focus on the double click detection and hides unrelated parts with
 \code{<...>}.
 %
 The methods \code{update} (ln. 14--26) and \code{on\_click} (ln. 28--34) are
 examples of \emph{short-lived callbacks}, which are pieces of code that execute
 atomically in reaction to external input events.
-The callback \code{on\_click} reacts to mouse clicks detected by the button
-base class \code{RectComponent} (ln. 2), while the callback \code{update}
-continuously reacts to the passage of time, frame by frame.
+The callback \code{on\_click} reacts to mouse clicks detected by the base class
+\code{RectComponent} (ln. 2), while the callback \code{update} continuously
+reacts to the passage of time, frame by frame.
 Callbacks are short lived because they must react to input as fast as possible
 to let other callbacks execute, keeping the game with real-time responsiveness.
 %
@@ -463,7 +465,7 @@ For instance, the distance between the initialization of \code{pressed} (ln.
 Arguably, this dispersion of code across methods makes the understanding and 
 maintenance of the double-click behavior more difficult.
 Also, even though the state variables are private, unrelated methods such as 
-\code{draw}`, which is defined in middle of the class (ln. 10--12), can
+\code{draw}, which is defined in middle of the class (ln. 10--12), can
 potentially access them.
 
 \begin{figure}[t]
@@ -478,20 +480,26 @@ potentially access them.
 \CEU provides structured constructs to deal with events, aiming to eradicate
 explicit manipulation of state variables for control-flow purposes.
 %
-The loop detection (ln. 4--10) awaits the first click (ln. 5) and then, while
-watching 1 second (ln. 6--9), awaits the second click (ln. 7).
+In Figure~\ref{lst.armageddon}.b, the loop detection (ln. 4--10) awaits the
+first click (ln. 5) and then, while watching 1 second (ln. 6--9), awaits the
+second click (ln. 7).
 If the second click occurs within 1 second, the \code{break} terminates the
 loop (ln. 8) and the \code{emit} signals the double click to the application
 (ln. 12).
-Otherwise, the \code{watching} block as a whole aborts and restarts the loop, 
-falling back to the first click \code{await} (ln. 5).
+Otherwise, the \code{watching} block as a whole aborts after 1 second  and the
+loop restarts, falling back to the first click \code{await} (ln. 5).
 %
 Double click detection in \CEU doesn't require state variables and is entirely
 self-contained in the \code{loop} body (ln. 4--10).
-Furthermore, these 7 lines of code \emph{only} detect the double click, leaving
-the actual effect to happen outside the loop (ln. 12).
+Also, these 7 lines of code \emph{only} detect the double click, leaving the
+actual effect to happen outside the loop (ln. 12).
 
-\textbf{Case Study: The \emph{Bomber action} sequence}
+TODO: Structured programming, ...
+
+\textbf{Case Study: The \emph{Bomber action} animation sequence}
+
+TODO: descrever o que sao actions, exibir imagem da tela com menu de actions e
+seta apontando para pingu sendo clicado e com acao recem ativada
 
 %\begin{figure}[t]
 %\centering
@@ -504,7 +512,7 @@ the actual effect to happen outside the loop (ln. 12).
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{bomber-state}
-\caption{ State machine for the \emph{Bomber animation}.
+\caption{ State machine for the \emph{Bomber animation} sequence.
 \label{fig.bomber}
 }
 \end{figure}
@@ -522,7 +530,7 @@ Bomber::Bomber (Pingu* p) :
 {
   <...>
   // 1. plays a "Oh no!" sound.
-  get_world()->play_sound("ohno");
+  play_sound("ohno");
 }
 
 void Bomber::update () {
@@ -532,7 +540,7 @@ void Bomber::update () {
   // 2. plays a "Bomb!" sound.
   if (sprite.frame()==10 && !sound_played) {
     sound_played = true;
-    get_world()->play_sound("plop");
+    play_sound("plop");
   }
 
   // 3. particles, terrain, explosion sprite
@@ -570,18 +578,18 @@ code/await Bomber (void) -> ActionName
 do
   <...>
   spawn Mover();  // movement in the background
-  var&? Sprite s = spawn Sprite(<...>);
+  var Sprite s = spawn Sprite(<...>);
                   // animation in the background
   watching s do
     // 1. plays a "Oh no!" sound.
-    {Sound::PingusSound::play_sound("ohno")};
+    {play_sound("ohno")};
 
     // 2. plays a "Bomb!" sound.
-    await game.dt until s!.sprite.frame == 10;
-    {Sound::PingusSound::play_sound("plop")};
+    await game.dt until s.sprite.frame == 10;
+    {play_sound("plop")};
 
     // 3. particles, terrain, explosion sprite
-    await game.dt until s!.sprite.frame == 13;
+    await game.dt until s.sprite.frame == 13;
     spawn PinguParticles(<...>) in particles;
     call Game_Remove({&bomber_radius}, <...>);
     do
@@ -644,23 +652,23 @@ follows%
 Figure~\ref{lst.bomber} compares the implementations in C++ and \CEU.
 
 In C++, the class \code{Bomber} defines the callbacks \code{draw} and
-\code{update} to manage the state machine described above:
+\code{update} to manage the state machine described above.
 %
 The class first defines one state variable for each action to perform
 (ln. 4--7).
 The ``Oh no!'' sound plays as soon as the object starts in \emph{state-1} 
 (ln. 11).
-The \code{update} callback (ln. 14--38) updates the pingu animation and
+The \code{update} callback (ln. 14--38) first updates the pingu animation and
 movement on every frame regardless of its current state (ln. 15--16).
 When the animation reaches the 10th frame, it plays the ``Bomb!'' sound and 
 switches to \emph{state-2} (ln. 18--22).
 The state variable \code{sound\_played} is required because the sprite frame
 doesn't necessarily advance on every \code{update} invocation (e.g.,
 \code{update} may execute twice during the 10th frame).
-The same reasoning and technique applies to \emph{state-3} (ln. 25--32 and
+The same reasoning and technique applies to \emph{state-3} (ln. 24--32 and
 43--44).
 The explosion sprite appears in a single frame in \emph{state-4} (ln. 45).
-Finally, the pingu dies after the animation frames terminate (ln. 35--37).
+Finally, the pingu dies after the animation frames terminate (ln. 34--35).
 %
 Note that a single numeric state variable suffices to track the states, but the
 original authors probably chose to encode each state in an independent boolean 
@@ -669,26 +677,26 @@ Still, due to the short-lived nature of callbacks, state variables are
 unavoidable and are actually the essence of object-oriented programming
 (i.e., \emph{methods + mutable state}).
 %
-Like the C++ implementation for detecting double clicks, note also that the
-state machine is encoded across 3 different methods, each intermixing code with
-unrelated functionality.
+Like double click detection in C++, note that the state machine is encoded
+across 3 different methods, each intermixing code with unrelated functionality.
 
 The equivalent code for the \emph{Bomber action} in \CEU doesn't require state
 variables and reflects the sequential state machine implicitly, using
 \code{await} statements in direct style to separate the actions.
 %
 The \code{Bomber} is a \code{code/await} abstraction of \CEU, which is similar
-to a coroutine~\cite{sync_async.cooperative}: a subroutine that retains runtime
-state, such as local variables and the program counter, across reactions to
-events (i.e., across \code{await} statements).
-The pingu movement and sprite animation are isolated in two other abstractions
-and execute in separate through the \code{spawn} primitive (ln. 4--5).
+to a coroutine or fiber~\cite{sync_async.cooperative}: a subroutine that
+retains runtime state, such as local variables and the program counter, across
+reactions to events (i.e., across \code{await} statements).
+The pingu movement and sprite animation are isolated in two other
+\code{code/await} abstractions and execute in separate through the \code{spawn}
+primitive (ln. 4--5).
 The event \code{game.dt} (ln. 12,16,24) is analogous to the \code{update}
 callback of C++ and occurs on every frame.
 %
-The code tracks the animation instance (ln. 7--27), performing the last bomber
-action on termination (ln. 30).
-As soon as the animation starts, the code performs the first action (ln. 8).
+The code tracks the animation aliveness (ln. 7--27) and, on termination,
+performs the last bomber action (ln. 30).
+As soon as the animation starts, the code performs the first action (ln. 9).
 The intermediate actions are performed when the corresponding conditions occur
 (ln. 12,16,24).
 The \code{do-end} block (ln. 19--25), restricts the lifespan of the
@@ -700,6 +708,8 @@ In contrast with the implementation in C++, all actions happen in a contiguous
 chunk of code (ln. 5--30) which handles no extra functionality.
 
 \subsection{Continuation Passing}
+
+TODO: what is this?
 
 \textbf{Case Study: Advancing Pages in the \emph{Story screen}}
 
@@ -1421,6 +1431,10 @@ interviewing professional game programmers, from ana-
 lyzing existing games and from transforming game
 mechanics.
 
+TODO:
+    - FSMs
+    - BTs
+    - FRP
 
 \section{Conclusion}
 \label{sec.conclusion}
