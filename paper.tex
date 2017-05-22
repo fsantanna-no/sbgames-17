@@ -109,12 +109,12 @@ escapeinside={||},
 Pingus is an open-source puzzle-platform video game based on Lemmings.
 The objective of the game is to guide a group of penguins through a number of
 obstacles towards a designated exit (Figure~\ref{fig.pingus}).
-% \footnote{Pingus gameplay video: \url{https://www.youtube.com/watch?v=MKrJgIFtJX0}}.
+% \footnote{Pingus gameplay video: \url{www.youtube.com/watch?v=MKrJgIFtJX0}}.
 %
 Pingus is developed in standard object-oriented C++, the \emph{lingua franca}
 of game development \cite{games.patterns}.
 The codebase%
-\footnote{Pingus repository: \url{https://github.com/Pingus/pingus/tree/7b255840c201d028fd6b19a2185ccf7df3a2cd6e/src}}
+\footnote{Pingus repository: \url{github.com/Pingus/pingus/}}
 is about 40.000 lines of code (LoCs), divided into
 the engine, level editor, auxiliary libraries, and the game logic itself.
 
@@ -152,9 +152,9 @@ programming~\cite{rp.deprecating,rp.rescala,sync_async.cooperative}.
 In this sense, callbacks actually disrupt structured programming, becoming
 ``our generation's \code{goto}''.%
 \footnote{``Callbacks as our Generations' Go To Statement'':
-\url{http://tirania.org/blog/archive/2013/Aug-15.html}}
+\url{tirania.org/blog/archive/2013/Aug-15.html}}
 %\footnote{``Escape from Callback Hell'':
-%\url{http://elm-lang.org/learn/Escape-from-Callback-Hell.elm}}
+%\url{elm-lang.org/learn/Escape-from-Callback-Hell.elm}}
 
 \CEU~\cite{ceu.sensys13,ceu.mod15} is a programming language that offers a
 concurrent and expressive alternative to C/C++ with the characteristics that
@@ -180,18 +180,38 @@ The runtime is single threaded and does not rely on garbage collection.
 
 In this work, we advocate structured synchronous reactive programming as an
 expressive and productive alternative for game logic development.
-We present a case study of rewriting the game logic of Pingus from C++ to \CEU
-with the contributions that follow:
+We present a case study of rewriting Pingus from C++ to \CEU with the
+contributions as follows:
 %
 \begin{itemize}
-\item Identification of five recurrent control-flow patterns in the game logic
-      that likely apply to other games.
-\item Idiomatic solutions in \CEU for six selected behaviors in the game logic.
-\item An in-depth qualitative analysis of the proposed solutions in comparison
-      to C++.
+\item Identification of five recurrent control-flow patterns that likely apply
+      to other games.
+\item Idiomatic code in \CEU for six selected behaviors in the game logic.
+\item An in-depth qualitative analysis of the implementations in \CEU in
+      comparison to C++.
 \end{itemize}
 
+TODO: falar mais sobre as 3 contribuicoes:
+- control-flow patterns
+    - o que eh isso
+        - definir controle
+    - como eh diferente de GoF
+        - behavioral patterns
+- ideia geral das solucoes
+    - eliminar estados explicitos com estruturas de controle apropriadas
+- o que eh analise qualitativa
+    - como medimos
+
+The rest of the paper is organized as follows:
+Section~\ref{sec.codebase} gives an overview of the Pingus codebases in C++ and
+\CEU.
+Section~\ref{sec.patterns} describes the five control-flow patterns and
+discusses six case studies.
+Section~\ref{sec.related} discusses related work.
+Section~\ref{sec.conclusion} concludes the paper.
+
 \section{The Pingus Codebase}
+\label{sec.codebase}
 
 \begin{figure*}[t]
 \begin{verbatim}
@@ -217,7 +237,7 @@ misc/              56       46     1.22     miscellaneous functionality
 \end{figure*}
 
 In Pingus, the game logic also accounts for almost half the size of the
-codebase: 18.173 from 39.362 LoCs (46\%) spread in 272 files.
+codebase: 18.173 from 39.362 LoCs (46\%) spread across 272 files.
 %
 However, about half of the game logic relates to non-reactive code, such as
 configurations and options, saved games and serialization, maps and levels
@@ -225,16 +245,16 @@ descriptions, string formatting, collision detection, graph algorithms, etc.
 This part remains unchanged and relies on the seamless integration between \CEU
 and C/C++~\cite{ceu.sensys13}.
 %
-Therefore, we rewrote 9.186 LoCs spread in 126 files%
-\footnote{Game logic codebase: \url{https://github.com/an000/p/tree/master/cpp/}}.
+Therefore, we rewrote 9.186 LoCs spread across 126 files%
+\footnote{Complete codebase: \url{github.com/an000/p/tree/master/cpp}}.
 %
 In order to only consider effective code in the analysis, we then removed all
 headers, declarations, trivial getters \& setters, and other innocuous
-statements, resulting in 70 implementation files with 4.135 dense LoCs
+statements, resulting 4.135 dense LoCs spread across 70 implementation files
 originally written in C++%
-\footnote{``Effective'' C++ codebase: \url{https://github.com/an000/p/tree/master/all/}}.
+\footnote{C++ codebase: \url{github.com/an000/p/tree/master/all}}.
 We did the same with the implementation in \CEU, resulting in 3.697 dense LoCs%
-\footnote{``Effective'' \CEU codebase: \url{https://github.com/an000/p/tree/master/all/}}.
+\footnote{\CEU codebase: \url{github.com/an000/p/tree/master/all}}.
 %
 Figure~\ref{tab.tree} summarizes the effective codebase in the two
 implementations.
@@ -253,7 +273,12 @@ animations that are affected by timers, game rules, and user interaction.
 In contrast, the \emph{Option screen} (\emph{ratio 0.97}) is a simple UI grid
 with trivial mouse interactions.
 
-\section{Control-Flow Patterns}
+\section{Control-Flow Patterns \& Case Studies}
+\label{sec.patterns}
+
+TODO: state pattern, FSM
+      strategy/visitor pattern, polymorhpism, hierarchies
+      observer pattern, signaling
 
 The rewriting process consisted of identifying sets of callbacks implementing
 \emph{control-flow behaviors} in the game and translating them to \CEU using
@@ -287,17 +312,19 @@ likely apply to other games:
     The completion of a long-lasting activity may carry a continuation, i.e.,
     some action to execute next in the game.
 \item \emph{Dispatching Hierarchies}:
-    Entities typically form a dispatching hierarchy in which a container that
-    receives a stimulus automatically forwards it to its managed children.
+    Entities form a dispatching hierarchy in which a container that receives a
+    stimulus automatically forwards it to its managed children.
 \item \emph{Lifespan Hierarchies}:
-    Entities typically form a lifespan hierarchy in which a terminating
-    container entity automatically destroys its managed children.
+    Entities form a lifespan hierarchy in which a terminating container entity
+    automatically destroys its managed children.
 \item \emph{Signaling Mechanisms}:
     Entities often need to communicate explicitly through signaling mechanisms,
     especially if there is no hierarchy relationship between them.
 \end{enumerate}
 
 \subsection{Finite State Machines}
+
+TODO: falar do state pattern, citar game.patterns, falar que usa estado explicito
 
 \textbf{Case Study: Detecting double-clicks in the \emph{Armageddon button}}
 
@@ -312,7 +339,7 @@ likely apply to other games:
 
 In Pingus, a double click in the \emph{Armageddon button} at the bottom right
 of the screen literally explodes all pingus.%
-\footnote{Double click animation: \url{https://github.com/an000/p/blob/master/README.md#1} }
+\footnote{Double click animation: \url{github.com/an000/p/blob/master/README.md#1} }
 Figure~\ref{lst.armageddon} compares the implementations in C++ and \CEU.
 
 \begin{figure*}[t]
@@ -598,12 +625,12 @@ end
 
 The \emph{Bomber action} explodes the clicked pingu, throwing particles around
 and also destroying the terrain under its radius.%
-\footnote{Bomber action animation: \url{https://github.com/an000/p/blob/master/README.md#2} }
+\footnote{Bomber action animation: \url{github.com/an000/p/blob/master/README.md#2} }
 %
 We can model the explosion animation with a sequential state machine
 (Figure~\ref{fig.bomber}) with actions associated to specific frames as
 follows%
-\footnote{State machine animation: \url{https://github.com/an000/p/blob/master/README.md#3} }:
+\footnote{State machine animation: \url{github.com/an000/p/blob/master/README.md#3} }:
 %
 \begin{enumerate}
 \item 0th frame:  plays a "Oh no!" sound.
@@ -779,7 +806,7 @@ end
 
 The clickable \emph{blue dots} in the campaign world map transit to ambience
 story screens%
-\footnote{Story screen animation: \url{https://github.com/an000/p/blob/master/README.md#4} }.
+\footnote{Story screen animation: \url{github.com/an000/p/blob/master/README.md#4} }.
 A story is composed of multiple pages and, inside each page, the words of the
 story appear incrementally over time.
 A first click in the button \code{>>>} fast forwards the words to show the full 
@@ -972,7 +999,7 @@ eliminates dispatching chains entirely.
 
 A pingu is a dynamic entity created periodically and destroyed under certain
 conditions, such as falling from a high altitude%
-\footnote{Death of pingus animation: \url{https://github.com/an000/p/blob/master/README.md#5} }.
+\footnote{Death of pingus animation: \url{github.com/an000/p/blob/master/README.md#5} }.
 %
 Figure~\ref{lst.pingus} compares the implementations in C++ and \CEU.
 
@@ -1119,16 +1146,16 @@ program.
 \begin{minipage}[t]{0.50\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
 void GlbEvt::on_button_press (<...>) {
+  <...>
+  switch (event.keysym.sym) {
+    case K_g:
+      if (keys[K_LCTRL] || keys[K_RCTRL]) {
+        cfgmgr.set_grab(
+          !cfgmgr.get_grab());
+      }
+      break;
     <...>
-    switch (event.keysym.sym) {
-        case K_g:
-            if (keys[K_LCTRL] || keys[K_RCTRL]) {
-                cfgmgr.set_grab(
-                    !cfgmgr.get_grab());
-            }
-            break;
-        <...>
-    }
+  }
 }
 
 ///
@@ -1136,11 +1163,11 @@ void GlbEvt::on_button_press (<...>) {
 boost::signal<void(bool)> on_grab_change;
 
 void CfgMgr::set_grab (bool v) {
-    <...>
-    if (v != get_grab()) {
-        <...>   // the actual "grab" effect
-        on_grab_change(v);
-    }
+  <...>
+  if (v != get_grab()) {
+    <...>   // the actual "grab" effect
+    on_grab_change(v);
+  }
 }
 
 ///
@@ -1148,10 +1175,10 @@ void CfgMgr::set_grab (bool v) {
 boost::signal<void (bool)> on_change;
 
 void ChkBox::set (bool on, bool sndsig) {
-    <...>   // switches the check box state
-    if (sndsig) {
-        on_change(on);
-    }
+  <...>   // switches the check box state
+  if (sndsig) {
+    on_change(on);
+  }
 }
 
 ///
@@ -1159,35 +1186,36 @@ void ChkBox::set (bool on, bool sndsig) {
 typedef std::vector<boost::connection> Conns;
 Conns conns;
 
-OptionMenu::OptionMenu() :
-    conns(),
-    grab_box(),
-    <...>
+OptMenu::OptMenu() :
+  conns(),
+  grab_box(),
+  <...>
 {
-    grab_box = new ChkBox(<...>);
-    conns.push_back(
-        cfgmgr.on_grab_change.connect(
-            std::bind(&ChkBox::set, grab_box, <...>, false);
-        )
-    );
-    conns.push_back(
-        grab_box->on_change.connect(
-            std::bind(&CfgMgr::set_grab, &cfgmgr, <...>);
-        )
-    );
-    <...>
+  grab_box = new ChkBox(<...>);
+  conns.push_back(
+    cfgmgr.on_grab_change.connect( std::bind(
+      &ChkBox::set, grab_box, <...>, false) );
+    )
+  );
+  conns.push_back(
+    grab_box->on_change.connect( std::bind(
+      &CfgMgr::set_grab, &cfgmgr, <...>) );
+    )
+  );
+  <...>
 
 }
 
-OptionMenu::~OptionMenu() {
-    for (Conns::iterator i=conns.begin();
-                         i!=conns.end();
-                         ++i) {
-        (*i).disconnect();
-    }
+OptMenu::~OptMenu() {
+  for (Conns::iterator i=conns.begin();
+             i!=conns.end();
+             ++i) {
+    (*i).disconnect();
+  }
 }
 
 
+.
 \end{lstlisting}
 \centering\small{\ax Implementation in C++}
 \end{minipage}
@@ -1195,77 +1223,76 @@ OptionMenu::~OptionMenu() {
 \begin{minipage}[t]{0.50\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
 spawn do
-    var _SDL_KeyboardEvent&& e;
-    every e in SDL_KEYDOWN do
-        var _u8&& keys = _SDL_GetKeyState(null);
-        <...>
-        if e:keysym.sym == K_g then
-            if keys[K_LCTRL] or keys[K_RCTRL] then
-                emit cfgmgr.go_grab(
-                        not {cfgmgr.get_grab()});
-            end
-        end
-        <...>
+  var _SDL_KeyboardEvent&& e;
+  every e in SDL_KEYDOWN do
+    var _u8&& keys = _SDL_GetKeyState(null);
+    <...>
+    if e:keysym.sym == K_g then
+      if keys[K_LCTRL] or keys[K_RCTRL] then
+        emit cfgmgr.go_grab(
+            not {cfgmgr.get_grab()});
+      end
     end
+    <...>
+  end
 end
 
 ///
 
 data CfgMgr with
-    event bool go_grab;
+  event bool go_grab;
 end
 var CfgMgr cfgmgr = val CfgMgr(_);
 
 spawn do
-    var bool v;
-    every v in cfgmgr.go_grab do
-        <...>   // the actual "grab" effect
-    end
+  var bool v;
+  every v in cfgmgr.go_grab do
+    <...>   // the actual "grab" effect
+  end
 end
 
 ///
 
 data IChkBox with
-    var   bool is_on;
-    event bool go_click;
+  var   bool is_on;
+  event bool go_click;
 end
 
-code/await ChkBox (<...>) -> (var IChkBox chkbox) -> FOREVER do
-    chkbox = val IChkBox(<...>);
-    <...>
-    par do
-        every c.component.on_click do
-            emit chkbox.go_click(not chkbox.is_on);
-        end
-    with
-        loop do
-            <...>   // switches the check box state
-            chkbox.is_on = await chkbox.go_click;
-        end
+code/await ChkBox (<...>) -> (var IChkBox box) -> FOREVER do
+  box = val IChkBox(<...>);
+  <...>
+  par do
+    every c.component.on_click do
+      emit box.go_click(not box.is_on);
     end
+  with
+    loop do
+      <...>   // switches the check box state
+      box.is_on = await box.go_click;
+    end
+  end
 end
 
 ///
 
-code/await OptionMenu <...> do
-    <...>
-    var& ChkBox b2 = <...>;
-    spawn do
-        par do
-            var bool v;
-            every v in cfgmgr.go_grab do
-                emit b2.chkbox.go_click(v);
-            end
-        with
-            var bool v;
-            every v in b2.chkbox.go_click do
-                emit cfgmgr.go_grab(v);
-            end
-        end
+code/await OptMenu <...> do
+  <...>
+  var& ChkBox b2 = <...>;
+  spawn do
+    par do
+      var bool v;
+      every v in cfgmgr.go_grab do
+        emit b2.box.go_click(v);
+      end
+    with
+      var bool v;
+      every v in b2.box.go_click do
+        emit cfgmgr.go_grab(v);
+      end
     end
-    <...>
+  end
+  <...>
 end
-
 \end{lstlisting}
 \centering\small{\bx Implementation in \CEU}
 \end{minipage}
@@ -1277,7 +1304,7 @@ end
 
 The \emph{mouse grab option} restricts the mouse movement to the game window
 boundaries%
-\footnote{Mouse grab animation: \url{https://github.com/an000/p/blob/master/README.md#6} }.
+\footnote{Mouse grab animation: \url{github.com/an000/p/blob/master/README.md#6} }.
 The option can be set anywhere in the game by pressing \emph{Ctrl-G}.
 In addition, the \emph{Options menu} has a check box to toggle the
 \emph{mouse grab option} with mouse clicks while still responding to
@@ -1306,7 +1333,7 @@ the application on changes (ln. 33).
 Again, the \code{if} enclosing the signal emission (ln. 32--34) breaks the 
 dependency cycle of Figure~\ref{fig.events} to avoid infinite execution.
 %
-The class \code{OptionMenu} creates the dependency loop by connecting the two
+The class \code{OptMenu} creates the dependency loop by connecting the two
 signals.
 %
 The constructor binds
@@ -1324,7 +1351,7 @@ Note that the signal binding to call \code{ChkBox::set} (ln. 50) receives a
 fixed value \code{false} as the last argument to prevent infinite execution
 (ln. 30).
 %
-The \code{OptionMenu} destructor (ln. 62--66) breaks the connections explicitly
+The \code{OptMenu} destructor (ln. 62--66) breaks the connections explicitly
 when the \emph{Option screen} terminates.
 
 In \CEU, a \emph{Ctrl-G} key press broadcasts the internal event
@@ -1343,7 +1370,7 @@ It also reacts continuously to \code{go\_click} in another line of execution
 (ln. 45--48), which awakes from notifications from the first line of execution
 or from the application.
 %
-The \code{OptionMenu} connects the two events as follows:
+The \code{OptMenu} connects the two events as follows:
 %
 The two loops in parallel handle the connections in opposite directions:
 from the configuration manager to the check box (ln. 60--62);
@@ -1360,8 +1387,43 @@ Due to the stack-based execution for internal events in
 create infinite execution loops.
 
 \section{Related Work}
+\label{sec.related}
+
+Some previous work~\cite{a,b,c} discuss how the GoF patterns~\cite{gof} apply
+to video game development.
+    - generally?
+        - mostram exemplos abstratos
+            - imagine um jogo...
+                - assim poderiamos aplicar...
+            - sem codigo real
+            - nao aplicam a jogos existentes
+
+- patterns
+    - sbgames
+    - gpp   
+- contol-flow patterns that are recurrent in Pingus and likely apply to other
+games
+- also, not identifying and applying, but applying in idiomatic code in another
+  language
+
+Design patterns for games can be approached from two dif-
+ferent perspectives; firstly as patterns used for describing
+the game mechanics (gameplay and game rules) and sec-
+ondly as the use of object-oriented design patterns in pro-
+gramming games.
+Concerning game mechanics, Bjork et al. [4] introduced
+a set of design patterns which essentially are descriptions
+(employing a unified vocabulary) of reoccurring interac-
+tion schemes relevant to game’s story and gameplay. As
+such, these patterns are not related to the software archi-
+tecture or code. The proposed patterns are collected from
+interviewing professional game programmers, from ana-
+lyzing existing games and from transforming game
+mechanics.
+
 
 \section{Conclusion}
+\label{sec.conclusion}
 
 TODO: non reactive, C++ integration
 
@@ -1382,7 +1444,7 @@ game logic is not inherent to this domain, but a result of accidental
 complexity due to the lack of structured abstractions and an appropriate
 concurrency model to handle event-based applications.
 
-[goto]: http://tirania.org/blog/archive/2013/Aug-15.html
+[goto]: tirania.org/blog/archive/2013/Aug-15.html
 
 \section{Acknowledgments}
 
