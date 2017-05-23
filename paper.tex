@@ -184,6 +184,10 @@ We present a case study of rewriting Pingus from C++ to \CEU with the
 contributions as follows:
 %
 \begin{itemize}
+\item Applying idiomatic code in \CEU as alternative solutions for six selected
+      behaviors in the game logic.
+\item Presenting an in-depth qualitative analysis of the proposed solutions in
+      comparison to the original implementations in C++.
 \item Identifying five recurrent control-flow patterns that likely apply to
       other games:
         \emph{Finite State Machines},
@@ -191,10 +195,6 @@ contributions as follows:
         \emph{Dispatching Hierarchies},
         \emph{Lifespan Hierarchies},
         \emph{Signaling Mechanisms}.
-\item Applying idiomatic code in \CEU as alternative solutions for six selected
-      behaviors in the game logic.
-\item Presenting an in-depth qualitative analysis of the proposed solutions in
-      comparison to the original implementations in C++.
 \end{itemize}
 %
 A control-flow pattern is a recurring technique to describe dependencies and
@@ -228,9 +228,10 @@ variables and dependencies between classes.
 
 The rest of the paper is organized as follows:
 Section~\ref{sec.codebase} gives an overview of the Pingus codebases in C++ and
-\CEU.
-Section~\ref{sec.patterns} describes the five control-flow patterns and
-discusses six case studies in detail.
+\CEU and describes our approach to identify and rewrite the control flow in the
+game.
+Section~\ref{sec.patterns} discusses six case studies in detail which are
+categorized in five control-flow patterns.
 Section~\ref{sec.related} discusses related work.
 Section~\ref{sec.conclusion} concludes the paper.
 
@@ -291,18 +292,9 @@ animations that are affected by timers, game rules, and user interaction.
 In contrast, the \emph{Option screen} (\emph{ratio 0.97}) is a simple UI grid
 with trivial mouse interactions.
 
-\section{Control-Flow Patterns \& Case Studies}
-\label{sec.patterns}
-
-TODO: state pattern, FSM
-      strategy/visitor pattern, polymorhpism, hierarchies
-      observer pattern, signaling
-
-
-use cases first -> patterns later
-
-We can identify control-flow behaviors in C++ by looking for class members with
-identifiers resembling verbs, statuses, and counters (e.g.,
+As a general rewriting rule, we could identify control-flow behaviors in C++ by
+looking for class members with identifiers resembling verbs, statuses, and
+counters (e.g.,
 \code{pressed},
 \code{particle\_thrown},
 \code{mode}, and
@@ -310,10 +302,17 @@ identifiers resembling verbs, statuses, and counters (e.g.,
 Good chances are that variables with these ``suspicious names'' encode some
 form of control-flow progression that cross multiple callback invocations.
 
-We selected 6 representative game behaviors and describe their
-implementations in C++ and \CEU.
-We also categorize these behaviors in 5 abstract control-flow patterns that
-likely apply to other games:
+During the course of the rewriting process, we could identify more general
+control-flow patterns which likely apply to other games as well.
+
+\section{Control-Flow Patterns \& Case Studies}
+\label{sec.patterns}
+
+In this section, we select six representative game behaviors and describe in
+detail their implementations in C++ and \CEU.
+%
+We also categorize these behaviors in five abstract control-flow patterns as
+follows:
 
 \begin{enumerate}
 \item \emph{Finite State Machines}:
@@ -333,6 +332,10 @@ likely apply to other games:
     signaling mechanisms, especially if there is no hierarchy relationship
     between them.
 \end{enumerate}
+
+TODO: state pattern, FSM
+      strategy/visitor pattern, polymorhpism, hierarchies
+      observer pattern, signaling
 
 \subsection{Finite State Machines}
 
@@ -1409,14 +1412,23 @@ create infinite execution loops.
 \section{Related Work}
 \label{sec.related}
 
-Some previous work~\cite{a,b,c} discuss how the GoF patterns~\cite{gof} apply
-to video game development.
+The control-flow patterns closely relate to the \emph{GoF} behavioral
+patterns~\cite{gof}, which some previous work discuss in the context of video
+game development~\cite{a,b,c}.
+%
+different
     - generally?
         - mostram exemplos abstratos
             - imagine um jogo...
                 - assim poderiamos aplicar...
             - sem codigo real
             - nao aplicam a jogos existentes
+    - propose solutions
+        - eliminate
+for instance, the \emph{state pattern}, state machines, sequences
+trivial case of the bomber animation is a series of statements separated
+by await statements
+visitor, adopted in the language
 
 - patterns
     - sbgames
