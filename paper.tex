@@ -188,13 +188,13 @@ contributions as follows:
       behaviors in the game logic.
 \item Presenting an in-depth qualitative analysis of the proposed solutions in
       comparison to the original implementations in C++.
-\item Identifying five recurrent control-flow patterns that likely apply to
+\item Identifying four recurrent control-flow patterns that likely apply to
       other games:
         \emph{Finite State Machines},
         \emph{Continuation Passing},
-        \emph{Dispatching Hierarchies},
-        \emph{Lifespan Hierarchies},
-        \emph{Signaling Mechanisms}.
+        \emph{Dispatching Hierarchies}, and
+        \emph{Lifespan Hierarchies}.
+        %\emph{Signaling Mechanisms}.
 \end{itemize}
 %
 A control-flow pattern is a recurring technique to describe dependencies and
@@ -217,8 +217,9 @@ occur in a particular order.
 In C++, the implementation involves callbacks crossing reactions to successive
 events which manipulate state variables explicitly.
 %
-Although we documented in detail two use cases for each of the five patterns,
-in this work we only present six cases due to space constraints.
+We only present six cases distributed in the four patterns due to space
+constraints, but we actually documented in detail a total eleven cases in six
+patterns (we omit the sixth pattern \emph{Signaling Mechanisms} entirely).
 %
 This work focuses on a qualitative analysis for the programming techniques
 that we applied during the rewriting process.
@@ -231,7 +232,7 @@ Section~\ref{sec.codebase} gives an overview of the Pingus codebases in C++ and
 \CEU and describes our approach to identify and rewrite the control flow in the
 game.
 Section~\ref{sec.pats} discusses six case studies in detail which are
-categorized in five control-flow patterns.
+categorized in four control-flow patterns.
 Section~\ref{sec.related} discusses related work.
 Section~\ref{sec.conclusion} concludes the paper.
 
@@ -337,14 +338,17 @@ follows:
 \item \emph{Lifespan Hierarchies}:
     Entities form a lifespan hierarchy in which a terminating container entity
     automatically destroys its managed children.
-\item \emph{Signaling Mechanisms}:
-    Entities often need to communicate and affect each other explicitly through
-    signaling mechanisms, especially if there is no hierarchy relationship
-    between them.
+%\item \emph{Signaling Mechanisms}:
+    %Entities often need to communicate and affect each other explicitly through
+    %signaling mechanisms, especially if there is no hierarchy relationship
+    %between them.
 \end{enumerate}
 
 \subsection{Finite State Machines}
 \label{sec.pats.fsms}
+
+    Event occurrences map to transitions between states that trigger
+    appropriate actions comprising the behavior of a game entity.
 
 \subsubsection{Case Study: Detecting Double-Clicks in the \emph{Armageddon Button}}
 
@@ -514,9 +518,6 @@ actual effect to happen outside the loop (ln. 12).
 
 \subsubsection{Case Study: The \emph{Bomber Action} Animation Sequence}
 
-TODO: descrever o que sao actions, exibir imagem da tela com menu de actions e
-seta apontando para pingu sendo clicado e com acao recem ativada
-
 %\begin{figure}[t]
 %\centering
 %\includegraphics[width=\columnwidth]{bomber-anim}
@@ -527,9 +528,17 @@ seta apontando para pingu sendo clicado e com acao recem ativada
 
 \begin{figure}[t]
 \centering
+\includegraphics[width=120px]{bomber-01}
+\caption{ Assigning the \emph{Bomber action} to a pingu.
+\label{fig.bomber.action}
+}
+\end{figure}
+
+\begin{figure}[t]
+\centering
 \includegraphics[width=\columnwidth]{bomber-state}
 \caption{ State machine for the \emph{Bomber animation} sequence.
-\label{fig.bomber}
+\label{fig.bomber.fsm}
 }
 \end{figure}
 
@@ -647,12 +656,15 @@ end
 }
 \end{figure*}
 
+In Pingus, the player may assign actions to specific pingus, as illustrated in
+Figure~\ref{fig.bomber}.
+%
 The \emph{Bomber action} explodes the clicked pingu, throwing particles around
 and also destroying the terrain under its radius.%
 \footnote{Bomber action animation: \url{github.com/an000/p/blob/master/README.md#2} }
 %
 We can model the explosion animation with a sequential state machine
-(Figure~\ref{fig.bomber}) with actions associated to specific frames as
+(Figure~\ref{fig.bomber.fsm}) with actions associated to specific frames as
 follows%
 \footnote{State machine animation: \url{github.com/an000/p/blob/master/README.md#3} }:
 %
@@ -777,7 +789,8 @@ such as \code{par/or} and \code{watching}.
 \subsection{Continuation Passing}
 \label{sec.pats.cps}
 
-TODO: what is this?
+    The completion of a long-lasting activity may carry a continuation, i.e.,
+    some action to execute next in the game.
 
 \subsubsection{Case Study: Advancing Pages in the \emph{Story screen}}
 
@@ -934,8 +947,6 @@ encapsulated inside the inner loop nested with a deeper indentation (ln. 9).
 
 \subsubsection{Summary \& Uses in Pingus}
 
-TODO: case 2
-
 The direct style of \CEU has some advantages in comparison to the 
 continuation-passing style:
 %
@@ -950,7 +961,8 @@ continuation-passing style:
 Continuation passing typically controls the overall structure of the game,
 such as screen transitions in menus and level progressions.
 %
-\CEU uses the direct style techniques in 5 cases involving screen transitions:
+\CEU uses the direct style techniques in five cases involving screen
+transitions:
 the main menu, the level menu, the level set menu, the world map loop, and
 the gameplay loop.
 %
@@ -959,6 +971,9 @@ during gameplay.
 
 \subsection{Dispatching Hierarchies}
 \label{sec.pats.dispatching}
+
+    Entities form a dispatching hierarchy in which a container that receives a
+    stimulus automatically forwards it to its managed children.
 
 \subsubsection{Case Study: \emph{Bomber Action} \code{draw} and \code{update} Dispatching}
 
@@ -1029,7 +1044,7 @@ end
 \end{figure*}
 
 In C++, the class \code{Bomber} declares a \code{sprite} member to handle its
-animation frames (Figure~\ref{fig.bomber}).
+animation frames (Figure~\ref{fig.bomber.fsm}).
 %
 The \code{Sprite} class is part of the game engine and knows how to update and
 render itself.
@@ -1091,8 +1106,6 @@ eliminates dispatching chains entirely.
 
 \subsubsection{Summary \& Uses in Pingus}
 
-TODO: case 2
-
 Passive entities subjected to hierarchies require a dispatching architecture
 that makes the reasoning about the program harder:
 
@@ -1118,6 +1131,9 @@ them from 515 to 173 LoCs, mostly due to dispatching code removal.
 
 \subsection{Lifespan Hierarchies}
 \label{sec.pats.lifespan}
+
+    Entities form a lifespan hierarchy in which a terminating container entity
+    automatically destroys its managed children.
 
 \subsubsection{Case Study: Managing the Pingus Lifecycle}
 
@@ -1280,293 +1296,6 @@ instantiations across 37 files.
 Pools are used to hold explosion particles, levels and level sets from files,
 gameplay \& worldmap objects, and UI widgets.
 
-\subsection{Signaling Mechanisms}
-\label{sec.pats.signaling}
-
-\subsubsection{Case Study: Global Keys and the Options Menu}
-
-%\begin{figure}[t]
-%\centering
-%\includegraphics[width=\columnwidth]{options-anim-opt}
-%\caption{The \emph{Mouse Grab} configuration option.
-%\label{fig.options}
-%}
-%\end{figure}
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{events}
-\caption{Mutual dependency between signals.
-\label{fig.events}
-}
-\end{figure}
-
-\begin{figure*}[t]
-\begin{minipage}[t]{0.50\linewidth}
-\begin{lstlisting}[numbers=left,xleftmargin=3em]
-void GlbEvt::on_button_press (<...>) {
-  <...>
-  switch (event.keysym.sym) {
-    case K_g:
-      if (keys[K_LCTRL] || keys[K_RCTRL]) {
-        cfgmgr.set_grab(
-          !cfgmgr.get_grab());
-      }
-      break;
-    <...>
-  }
-}
-
-///
-
-boost::signal<void(bool)> on_grab_change;
-
-void CfgMgr::set_grab (bool v) {
-  <...>
-  if (v != get_grab()) {
-    <...>   // the actual "grab" effect
-    on_grab_change(v);
-  }
-}
-
-///
-
-boost::signal<void (bool)> on_change;
-
-void ChkBox::set (bool on, bool sndsig) {
-  <...>   // switches the check box state
-  if (sndsig) {
-    on_change(on);
-  }
-}
-
-///
-
-typedef std::vector<boost::connection> Conns;
-Conns conns;
-
-OptMenu::OptMenu() :
-  conns(),
-  grab_box(),
-  <...>
-{
-  grab_box = new ChkBox(<...>);
-  conns.push_back(
-    cfgmgr.on_grab_change.connect( std::bind(
-      &ChkBox::set, grab_box, <...>, false) );
-    )
-  );
-  conns.push_back(
-    grab_box->on_change.connect( std::bind(
-      &CfgMgr::set_grab, &cfgmgr, <...>) );
-    )
-  );
-  <...>
-
-}
-
-OptMenu::~OptMenu() {
-  for (Conns::iterator i=conns.begin();
-             i!=conns.end();
-             ++i) {
-    (*i).disconnect();
-  }
-}
-
-
-.
-\end{lstlisting}
-\centering\small{\ax Implementation in C++}
-\end{minipage}
-%
-\begin{minipage}[t]{0.50\linewidth}
-\begin{lstlisting}[numbers=left,xleftmargin=3em]
-spawn do
-  var _SDL_KeyboardEvent&& e;
-  every e in SDL_KEYDOWN do
-    var _u8&& keys = _SDL_GetKeyState(null);
-    <...>
-    if e:keysym.sym == K_g then
-      if keys[K_LCTRL] or keys[K_RCTRL] then
-        emit cfgmgr.go_grab(
-            not {cfgmgr.get_grab()});
-      end
-    end
-    <...>
-  end
-end
-
-///
-
-data CfgMgr with
-  event bool go_grab;
-end
-var CfgMgr cfgmgr = val CfgMgr(_);
-
-spawn do
-  var bool v;
-  every v in cfgmgr.go_grab do
-    <...>   // the actual "grab" effect
-  end
-end
-
-///
-
-data IChkBox with
-  var   bool is_on;
-  event bool go_click;
-end
-
-code/await ChkBox (<...>) -> (var IChkBox box) -> FOREVER do
-  box = val IChkBox(<...>);
-  <...>
-  par do
-    every c.component.on_click do
-      emit box.go_click(not box.is_on);
-    end
-  with
-    loop do
-      <...>   // switches the check box state
-      box.is_on = await box.go_click;
-    end
-  end
-end
-
-///
-
-code/await OptMenu <...> do
-  <...>
-  var& ChkBox b2 = <...>;
-  spawn do
-    par do
-      var bool v;
-      every v in cfgmgr.go_grab do
-        emit b2.box.go_click(v);
-      end
-    with
-      var bool v;
-      every v in b2.box.go_click do
-        emit cfgmgr.go_grab(v);
-      end
-    end
-  end
-  <...>
-end
-\end{lstlisting}
-\centering\small{\bx Implementation in \CEU}
-\end{minipage}
-%\rule{8.4cm}{0.37pt}
-\caption{ TODO.
-\label{lst.grab}
-}
-\end{figure*}
-
-The \emph{mouse grab option} restricts the mouse movement to the game window
-boundaries%
-\footnote{Mouse grab animation: \url{github.com/an000/p/blob/master/README.md#6} }.
-The option can be set anywhere in the game by pressing \emph{Ctrl-G}.
-In addition, the \emph{Options menu} has a check box to toggle the
-\emph{mouse grab option} with mouse clicks while still responding to
-\emph{Ctrl-G} presses.
-%
-Figure~\ref{lst.grab} compares the implementations in C++ and \CEU.
-
-The implementations in C++ and \CEU use a signalling mechanism to connect the
-key presses, the check box, and a configuration manager that applies the
-appropriate side effects in the game (i.e., restrict the mouse movement).
-Figure~\ref{fig.events} illustrates how the mutual notifications create a 
-dependency cycle between the configuration manager and the check box.
-
-In C++, the class `GlbEvt` detects \emph{Ctrl-G} presses and invokes the
-callback \code{config\_manager.set\_grab} (ln. 5--8).
-%
-The class `CfgMgr` uses a \code{boost::signal} (ln. 16) to notify the
-application when the new configuration is applied (ln. 22).
-%
-The \code{if} enclosing the signal emission (ln. 20--23) breaks the dependency 
-cycle of Figure~\ref{fig.events} and prevents an infinite execution loop.
-%
-The class \code{ChkBox} also uses a \code{boost::signal} (ln. 28) to notify
-the application on changes (ln. 33).
-%
-Again, the \code{if} enclosing the signal emission (ln. 32--34) breaks the 
-dependency cycle of Figure~\ref{fig.events} to avoid infinite execution.
-%
-The class \code{OptMenu} creates the dependency loop by connecting the two
-signals.
-%
-The constructor binds
-the signal \code{config\_manager.on\_grab\_change} to the callback
-    method \code{grab\_box->set} (ln. 48--52),
-and also
-the signal \code{grab\_box->on\_change} to the callback method
-    \code{config\_manager.set\_grab} (ln. 53--57).
-This way, every time the \code{CfgMgr} signals
-\code{on\_grab\_change} (ln. 22), the method \code{set} is implicitly called.
-The same happens between the signal \code{on\_change} in the \code{ChkBox}
-and the method \code{set\_grab} in the \code{CfgMgr} (ln. 18).
-%
-Note that the signal binding to call \code{ChkBox::set} (ln. 50) receives a
-fixed value \code{false} as the last argument to prevent infinite execution
-(ln. 30).
-%
-The \code{OptMenu} destructor (ln. 62--66) breaks the connections explicitly
-when the \emph{Option screen} terminates.
-
-In \CEU, a \emph{Ctrl-G} key press broadcasts the internal event
-\code{config\_manager.go\_grab} to the application (ln. 8).
-%
-The configuration manager just needs to react to \code{go\_grab}
-continuously to perform the \emph{grab} effect (ln. 25--27).
-%
-The \code{ChkBox} exposes the event \code{go\_click} for notifications in
-both directions, i.e., from the abstraction to the application and
-\emph{vice versa}:
-%
-The abstraction reacts to external clicks continuously (ln. 41--43) to
-broadcast the event \code{go\_click} (ln. 47).
-It also reacts continuously to \code{go\_click} in another line of execution
-(ln. 45--48), which awakes from notifications from the first line of execution
-or from the application.
-%
-The \code{OptMenu} connects the two events as follows:
-%
-The two loops in parallel handle the connections in opposite directions:
-from the configuration manager to the check box (ln. 60--62);
-and
-from the check box to the configuration manager (ln. 65--67).
-%
-When the \emph{Option screen} terminates, the connections break automatically
-since the body with the two loops is automatically aborted.
-%
-Note that the implementation in \CEU does not check event emits to break the
-dependency cycle and prevent infinite execution.
-Due to the stack-based execution for internal events in
-\CEU~\cite{ceu.sensys13}, programs with mutually-dependent events do not
-create infinite execution loops.
-
-\subsubsection{Summary \& Uses in Pingus}
-
-TODO: case 2
-
-First-class internal events of \CEU provide some advantages in comparison to 
-Boost signals:
-
-\begin{itemize}
-\item They use the same convenient syntax of external events (e.g.,
-      \code{emit}, \code{await}, \code{every}, etc.).
-\item They never create infinite dependency loops.
-\item They do not require explicit unbinding.
-\end{itemize}
-
-The implementation in \CEU uses 39 events for internal communication defined in
-23 files with over 200 invocations of \code{emit} and \code{await} spread in
-over 50 files.
-
-Internal events are used for resizing entities, broadcasting update and draw
-requests, pausing parts of the game, triggering new pingu actions, signalling
-collisions, signalling UI interactions, among many others cases.
-
 \section{Related Work}
 \label{sec.related}
 
@@ -1641,9 +1370,9 @@ TODO: non reactive, C++ integration
 
 We promote the \emph{structured synchronous reactive} programming model of
 \CEU for the development of games.
-We present in-depth use cases categorized in 5 control-flow patterns applied to
-\emph{Pingus} (an open-source \emph{Lemmings} clone) that likely apply to other
-games.
+We present in-depth use cases categorized in four control-flow patterns applied
+to \emph{Pingus} (an open-source \emph{Lemmings} clone) that likely apply to
+other games.
 
 We show how the standard way to program games with objects and callbacks in C++
 hinders structured programming techniques, such as support for sequential
