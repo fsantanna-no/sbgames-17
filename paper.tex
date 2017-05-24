@@ -230,7 +230,7 @@ The rest of the paper is organized as follows:
 Section~\ref{sec.codebase} gives an overview of the Pingus codebases in C++ and
 \CEU and describes our approach to identify and rewrite the control flow in the
 game.
-Section~\ref{sec.patterns} discusses six case studies in detail which are
+Section~\ref{sec.pats} discusses six case studies in detail which are
 categorized in five control-flow patterns.
 Section~\ref{sec.related} discusses related work.
 Section~\ref{sec.conclusion} concludes the paper.
@@ -306,7 +306,7 @@ During the course of the rewriting process, we could identify more general
 control-flow patterns which likely apply to other games as well.
 
 \section{Control-Flow Patterns \& Case Studies}
-\label{sec.patterns}
+\label{sec.pats}
 
 In this section, we select six representative game behaviors and describe in
 detail their implementations in C++ and \CEU.
@@ -333,11 +333,8 @@ follows:
     between them.
 \end{enumerate}
 
-TODO: state pattern, FSM
-      strategy/visitor pattern, polymorhpism, hierarchies
-      observer pattern, signaling
-
 \subsection{Finite State Machines}
+\label{sec.pats.fsms}
 
 TODO: falar do state pattern, citar game.patterns, falar que usa estado explicito
 
@@ -721,6 +718,7 @@ In contrast with the implementation in C++, all actions happen in a contiguous
 chunk of code (ln. 5--30) which handles no extra functionality.
 
 \subsection{Continuation Passing}
+\label{sec.pats.cps}
 
 TODO: what is this?
 
@@ -878,6 +876,7 @@ not intermixed with the ``advancing pages'' behavior, instead, it is
 encapsulated inside the inner loop nested with a deeper indentation (ln. 9).
 
 \subsection{Dispatching Hierarchies}
+\label{sec.pats.dispatching}
 
 \textbf{Case Study: \emph{Bomber action} \code{draw} and \code{update} dispatching}
 
@@ -1009,6 +1008,7 @@ The radical decoupling between the program hierarchy and reactions to events
 eliminates dispatching chains entirely.
 
 \subsection{Lifespan Hierarchies}
+\label{sec.pats.lifespan}
 
 \textbf{Case Study: Managing the Pingus Lifecycle}
 
@@ -1099,7 +1099,7 @@ Without the \code{erase} call above, a dead pingu would remain in the
 collection with updates on every frame (ln. 11).
 Since the \code{redraw} behavior for a dead pingu is innocuous, the death could
 go unnoticed but the program would keep consuming memory and CPU time.
-This problem is known as the \emph{lapsed listener}~\cite{games.patters} and
+This problem is known as the \emph{lapsed listener}~\cite{games.patterns} and
 also occurs in languages with garbage collection:
 A container typically holds a strong reference to a child (sometimes the only 
 reference to it), and the runtime cannot magically detect it as garbage.
@@ -1146,6 +1146,7 @@ Hence, a dynamic instance that terminates naturally leaves no traces in the
 program.
 
 \subsection{Signaling Mechanisms}
+\label{sec.pats.signaling}
 
 \textbf{Case Study: Global Keys and the Options Menu}
 
@@ -1406,7 +1407,7 @@ since the body with the two loops is automatically aborted.
 Note that the implementation in \CEU does not check event emits to break the
 dependency cycle and prevent infinite execution.
 Due to the stack-based execution for internal events in
-\CEU~\cite{ceu.sensys13)}, programs with mutually-dependent events do not
+\CEU~\cite{ceu.sensys13}, programs with mutually-dependent events do not
 create infinite execution loops.
 
 \section{Related Work}
@@ -1414,8 +1415,47 @@ create infinite execution loops.
 
 The control-flow patterns closely relate to the \emph{GoF} behavioral
 patterns~\cite{gof}, which some previous work discuss in the context of video
-game development~\cite{a,b,c}.
+game development~\cite{games.patterns,games.gof.2015,games.gof.2007}.
 %
+The original game in C++ uses variations of the
+    \emph{state} (Sections~\ref{sec.pats.fsms}~and~\ref{sec.pats.cps}),
+    \emph{visitor} (Sections~\ref{sec.pats.dispatching}~and~\ref{sec.pats.lifespan}), and
+    \emph{observer} (Section~\ref{sec.pats.signaling} and to handle input in general)
+patterns as implementation details to achieve the desired higher-level
+control-flow patterns.
+%
+\CEU overcomes the need of behavioral patterns with a semantics that supports
+structured control-flow mechanisms and event-based communication via broadcast.
+%
+As an example, the \emph{state pattern} for the bomber animation in
+Section~\ref{sec.pats.fsms} becomes a series of blocks separated by
+\code{await} statements.
+
+A number of domain-specific languages, frameworks, and techniques have been
+proposed for particular subsystems of the game logic, such as
+animations~\cite{games.anims.2006,games.anims.2003,games.anims.1996,games.anims.1982},
+game state and screen progression~\cite{games.fsms.2006.1,games.fsms.2006.2}, and
+behavior and AI modeling~\cite{games.bts,games.bts.unreal}
+%
+In Pingus, we employed \CEU at the core of the game for event dispatching
+(Section~\ref{sec.pats.dispatching}) and memory management of entities
+(Section~\ref{sec.pats.lifespan}), eliminating parts of the original game
+engine.
+We also implemented all entity animations and behaviors
+(Section~\ref{sec.pats.fsms}), screen transitions
+(Section~\ref{sec.pats.cps}), and intermodule communication
+(Section~\ref{sec.pats.signaling}) using the available control mechanisms.
+%
+\CEU is a superset of C targeting reactive systems in general, not only games,
+and has also been adopted in other domains, such as
+    wireless sensor networks~\cite{ceu.sensys13,ceu.terra} and
+    multimedia systems~\cite{ceu.media.webmedia16}.
+
+Functional reactive programming is an
+FRP
+    - interfacing with C
+    - live porting
+
 different
     - generally?
         - mostram exemplos abstratos
@@ -1425,9 +1465,6 @@ different
             - nao aplicam a jogos existentes
     - propose solutions
         - eliminate
-for instance, the \emph{state pattern}, state machines, sequences
-trivial case of the bomber animation is a series of statements separated
-by await statements
 visitor, adopted in the language
 
 - patterns
