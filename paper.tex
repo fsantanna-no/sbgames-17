@@ -45,7 +45,7 @@ escapeinside={||},
           class, every, FOREVER, this, spawn, in, pool, watching, until, 
           interface, each, abort, when, signal, PROC, CHAN, SIGNAL, PAR, not,
           bool, data, tag, escape, new, traverse,implementation,output,
-          native,@const,@pure,@safe,define},
+          native,@const,@pure,@safe,define,public,private},
     emphstyle={\bfseries},
     commentstyle=\color{dark}\scriptsize,
     %xleftmargin=20pt,
@@ -57,6 +57,7 @@ escapeinside={||},
 
 \newcommand{\CEU}{\textsc{C\'{e}u}\xspace}
 \newcommand{\code}[1] {{\small{\texttt{#1}}}}
+\newcommand{\Code}[1] {{\texttt{#1}}}
 \newcommand{\ax}{\code{[a]}\xspace}
 \newcommand{\bx}{\code{[b]}\xspace}
 
@@ -611,11 +612,11 @@ do
     {play_sound("ohno")};
 
     // 2. plays a "Bomb!" sound.
-    await game.dt until s.sprite.frame == 10;
+    await game.update until s.sprite.frame == 10;
     {play_sound("plop")};
 
     // 3. particles, terrain, explosion sprite
-    await game.dt until s.sprite.frame == 13;
+    await game.update until s.sprite.frame == 13;
     spawn PinguParticles(<...>) in particles;
     call Game_Remove({&bomber_radius}, <...>);
     do
@@ -623,7 +624,7 @@ do
       spawn Sprite(<...>);      // explosion
 
       // 4. tick: hides the explosion sprite
-      await game.dt;
+      await game.update;
     end
     await FOREVER;
   end
@@ -678,10 +679,9 @@ follows%
 \item Last frame: kills the pingu.
 \end{enumerate}
 
-Figure~\ref{lst.bomber} compares the implementations in C++ and \CEU.
-
-In C++, the class \code{Bomber} defines the callbacks \code{draw} and
-\code{update} to manage the state machine described above.
+In C++, the class \code{Bomber} in Figure~\ref{lst.bomber}.a defines the
+callbacks \code{draw} and \code{update} to manage the state machine described
+above.
 %
 The class first defines one state variable for each action to perform
 (ln. 4--7).
@@ -709,9 +709,10 @@ unavoidable and are actually the essence of object-oriented programming
 Like double click detection in C++, note that the state machine is encoded
 across 3 different methods, each intermixing code with unrelated functionality.
 
-The equivalent code for the \emph{Bomber action} in \CEU doesn't require state
-variables and reflects the sequential state machine implicitly, using
-\code{await} statements in direct style to separate the actions.
+The equivalent code in \CEU for the \emph{Bomber action} in
+Figure~\ref{lst.bomber}.b doesn't require state variables and reflects the
+sequential state machine implicitly, using \code{await} statements in direct
+style to separate the actions.
 %
 The \code{Bomber} is a \code{code/await} abstraction of \CEU, which is similar
 to a coroutine or fiber~\cite{sync_async.cooperative}: a subroutine that
@@ -720,7 +721,7 @@ reactions to events (i.e., across \code{await} statements).
 The pingu movement and sprite animation are isolated in two other
 \code{code/await} abstractions and execute in separate through the \code{spawn}
 primitive (ln. 4--5).
-The event \code{game.dt} (ln. 12,16,24) is analogous to the \code{update}
+The event \code{game.update} (ln. 12,16,24) is analogous to the \code{update}
 callback of C++ and occurs on every frame.
 %
 The code tracks the animation aliveness (ln. 7--27) and, on termination,
@@ -885,7 +886,6 @@ end
 
 
 
-
 .
 \end{lstlisting}
 \centering\small{\bx Implementation in \CEU}
@@ -907,10 +907,10 @@ A second click advances to the next page, until the story terminates.
 If the page completes before a click (due to the time elapsing), a first click 
 advances to the next page.
 %
-Figure~\ref{lst.story} compares the implementations in C++ and \CEU.
 
-In C++, the class \code{StoryScreenComponent} implements the method
-\code{next\_text}, which is a callback for clicks in \code{>>>}.
+In C++, the class \code{StoryScreenComponent} in Figure~\ref{lst.story}.a
+implements the method \code{next\_text}, which is a callback for clicks in
+\code{>>>}.
 %
 The variable `pages` (ln. 4--5, 24--26) is a vector holding each page, but
 which also encodes \emph{continuations} for the story progress:
@@ -924,8 +924,8 @@ The state variable \code{displayed} (ln. 6,15,20,21,27) switches between the
 behaviors ``advancing text'' and ``advancing pages'', which are both handled
 intermixed inside the method \code{next\_text}.
 
-The code in \CEU uses the internal event \code{next\_text}, which is emitted
-from clicks in \code{>>>}.
+The code in \CEU in Figure~\ref{lst.story}.b uses the internal event
+\code{next\_text}, which is emitted from clicks in \code{>>>}.
 %
 The sequential navigation from page to page uses a loop in direct style
 (ln. 6--15) instead of explicit state variables for the continuation and state
@@ -976,11 +976,7 @@ during gameplay.
     Entities form a dispatching hierarchy in which a container that receives a
     stimulus automatically forwards it to its managed children.
 
-\subsubsection{Case Study: \emph{Bomber Action} \code{draw} and \code{update} Dispatching}
-
-TODO
-
-Figure~\ref{lst.hier} compares the implementations in C++ and \CEU.
+\subsubsection{Case Study: \emph{Bomber Action} \Code{draw} and \Code{update} Dispatching}
 
 \begin{figure}[t]
 \centering
@@ -1044,8 +1040,9 @@ end
 }
 \end{figure*}
 
-In C++, the class \code{Bomber} declares a \code{sprite} member to handle its
-animation frames (Figure~\ref{fig.bomber.fsm}).
+In C++, the class \code{Bomber} presented in Figure~\ref{lst.hier}.a declares a
+\code{sprite} member to handle its animation frames
+(Figure~\ref{fig.bomber.fsm}).
 %
 The \code{Sprite} class is part of the game engine and knows how to update and
 render itself.
@@ -1094,12 +1091,11 @@ architecture:
 The \code{draw} callback flows through the same dispatching hierarchy until
 reaching the \code{Sprite} class.
 
-In \CEU, the \code{Bomber} action spawns a \code{Sprite} animation instance on
-its body.
+In \CEU, the \code{Bomber} abstraction presented in Figure~\ref{lst.hier}.b
+spawns a \code{Sprite} animation instance on its body.
 %
-The \code{Sprite} instance (ln. 3) can react directly to external \code{dt} and
-\code{redraw} events (which are analogous to \code{update} and \code{redraw}
-callbacks, respectively), bypassing the program hierarchy entirely.
+The \code{Sprite} instance (ln. 3) can react directly to external \code{update}
+and \code{draw} events, bypassing the program hierarchy entirely.
 While and \emph{only while} the bomber abstraction is alive, the sprite
 animation is also alive.
 The radical decoupling between the program hierarchy and reactions to events
@@ -1175,38 +1171,42 @@ code/await Game (void) do
     spawn SmallMap(<...>);
     <...> // other coexisting functionality
 end
+
+
+
+
+
+.
 \end{lstlisting}
 \centering\small{\bx Implementation in \CEU}
 \end{minipage}
 %\rule{8.4cm}{0.37pt}
 \caption{ Managing the UI widgets lifecycle.
-\label{lst.pingus}
+\label{lst.ui}
 }
 \end{figure*}
 
-Figure~\ref{fig.ui} shows the game UI widgets holding the buttons, pingus
-counter, and small map which coexist with the game screen during its whole
-lifespan.
+Figure~\ref{fig.ui} shows the game UI widgets with action buttons, the pingus
+counter, and a small map which all coexist with the game screen during its
+whole lifespan.
 %
-Figure~\ref{lst.ui} compares the implementations in C++ and \CEU.
-
 In C++, the widgets are created in the constructor of the class
-\code{GameSession} (ln. 5--7), added to a UI container (ln. 9--11), and are
-never removed since they must always be visible.
+\code{GameSession} in Figure~\ref{lst.ui}.a (ln. 5--7), added to a UI container
+(ln. 9--11), and are never removed since they must always be visible.
 Arguably, to better express the intent of making them coexist with the game
-screen, the widgets could be declared as top-level automatic (non-dynamic)
-members.
+screen, the widgets could alternatively be declared as top-level automatic
+(non-dynamic) members.
 However, the class uses a container to automate \code{draw} and \code{update}
 dispatching to the widgets, as discussed in Section~\ref{sec.pats.dispatching}.
-In turn, the container method \code{add} expects dynamically allocated children
-only because they are automatically deallocated inside the container
+In turn, the container method \code{add} only expects dynamically allocated
+children because they are automatically deallocated inside the container
 destructor.
 %
 The dynamic nature of containers in C++ demand extra caution from programmers:
 %
 \begin{itemize}
 \item When containers are part of a dispatching chain, it gets even harder to
-      know which objects are dispatched:
+      know which objects are dispatched at a given moment:
       one has to ``simulate'' the program execution and track calls to
       \code{add} and \code{remove}.
 \item For objects with dynamic lifespan, calls to \code{add} must always have
@@ -1217,7 +1217,7 @@ The dynamic nature of containers in C++ demand extra caution from programmers:
 \end{itemize}
 
 In Céu, entities that coexist just have to be created in the same lexical
-block.
+block in Figure~\ref{lst.ui}.b (ln. 3--5).
 %
 Since abstractions can react independently, they do not require a dispatching
 container.
@@ -1246,7 +1246,6 @@ A pingu is a dynamic entity created periodically and destroyed under certain
 conditions, such as falling from a high altitude%
 \footnote{Death of pingus animation: \url{github.com/an000/p/blob/master/README.md#5} }.
 %
-Figure~\ref{lst.pingus} compares the implementations in C++ and \CEU.
 
 \begin{figure*}[t]
 \begin{minipage}[t]{0.50\linewidth}
@@ -1290,7 +1289,7 @@ end
 code/await Pingu (<...>) do
     <...>
     loop do
-        await game.dt;
+        await game.update;
         if Pingu_Is_Out_Of_Screen() then
             <...>
             escape {PS_DEAD};
@@ -1306,8 +1305,8 @@ end
 }
 \end{figure*}
 
-In C++, the class \code{PinguHolder} is a container that holds all pingus
-alive.
+In C++, the class \code{PinguHolder} in Figure~\ref{lst.pingus}.a is a
+container that holds all pingus alive.
 %
 The method \code{PinguHolder::create\_pingu} (ln. 1--6) is called periodically
 to create a new \code{Pingu} and add it to the \code{pingus} collection
@@ -1319,7 +1318,7 @@ Entities with dynamic lifespan in C++ require explicit \code{add} and
 \code{remove} calls associated to a container (ln. 4,13).
 Without the \code{erase} call above, a dead pingu would remain in the
 collection with updates on every frame (ln. 11).
-Since the \code{redraw} behavior for a dead pingu is innocuous, the death could
+Since the \code{draw} behavior for a dead pingu is innocuous, the death could
 go unnoticed but the program would keep consuming memory and CPU time.
 This problem is known as the \emph{lapsed listener}~\cite{games.patterns} and
 also occurs in languages with garbage collection:
@@ -1338,8 +1337,8 @@ reference to it), and the runtime cannot magically detect it as garbage.
 Additionally, the \code{spawn} statement supports a pool identifier to
 associate the new instance with a pool.
 %
-The game screen spawns a new \code{Pingu} on every invocation of
-\code{Pingu\_Spawn}.
+The game screen in Figure~\ref{lst.pingus}.b spawns a new \code{Pingu} on every
+invocation of \code{Pingu\_Spawn} (ln. 4--7).
 %
 The \code{spawn} statement (ln. 6) specifies the pool declared at the top-level
 block of the game screen (ln. 3).
