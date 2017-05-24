@@ -267,8 +267,8 @@ codebase: 18.173 from 39.362 LoCs (46\%) spread across 272 files.
 However, about half of the game logic relates to non-reactive code, such as
 configurations and options, saved games and serialization, maps and levels
 descriptions, string formatting, collision detection, graph algorithms, etc.
-This part remains unchanged and relies on the seamless integration between \CEU
-and C/C++~\cite{ceu.sensys13}.
+This part remains unchanged and relies on the integration between \CEU and
+C/C++.
 %
 Therefore, we rewrote 9.186 LoCs spread across 126 files%
 \footnote{Complete codebase: \url{github.com/an000/p/tree/master/cpp}}.
@@ -301,6 +301,16 @@ counters (e.g.,
 \code{delay\_count}).
 Good chances are that variables with these ``suspicious names'' encode some
 form of control-flow progression that cross multiple callback invocations.
+
+We employed \emph{live code translation}, i.e., starting from the original
+codebase in C++, we reimplemented piece-by-piece without breaking the game
+compilation and execution.
+%
+This was only possible given the seamless integration between \CEU and
+C/C++~\cite{ceu.sensys13}: the type systems are equivalent and the integration
+happens at the source code level.
+This enables trivial sharing of control (calling C/C++ from \CEU and
+vice-versa) and data (accessing C/C++ data from \CEU and vice-versa).
 
 During the course of the rewriting process, we could identify more general
 control-flow patterns which likely apply to other games as well.
@@ -1451,52 +1461,29 @@ and has also been adopted in other domains, such as
     wireless sensor networks~\cite{ceu.sensys13,ceu.terra} and
     multimedia systems~\cite{ceu.media.webmedia16}.
 
-Functional reactive programming is an
-FRP
-    - interfacing with C
-    - live porting
-
-different
-    - generally?
-        - mostram exemplos abstratos
-            - imagine um jogo...
-                - assim poderiamos aplicar...
-            - sem codigo real
-            - nao aplicam a jogos existentes
-    - propose solutions
-        - eliminate
-visitor, adopted in the language
-
-- patterns
-    - sbgames
-    - gpp   
-- contol-flow patterns that are recurrent in Pingus and likely apply to other
-games
-- also, not identifying and applying, but applying in idiomatic code in another
-  language
-
-    - como eh diferente de GoF
-        - not much unlike behavioral patterns
-
-Design patterns for games can be approached from two dif-
-ferent perspectives; firstly as patterns used for describing
-the game mechanics (gameplay and game rules) and sec-
-ondly as the use of object-oriented design patterns in pro-
-gramming games.
-Concerning game mechanics, Bjork et al. [4] introduced
-a set of design patterns which essentially are descriptions
-(employing a unified vocabulary) of reoccurring interac-
-tion schemes relevant to game’s story and gameplay. As
-such, these patterns are not related to the software archi-
-tecture or code. The proposed patterns are collected from
-interviewing professional game programmers, from ana-
-lyzing existing games and from transforming game
-mechanics.
-
-TODO:
-    - FSMs
-    - BTs
-    - FRP
+Functional reactive programming (FRP)~\cite{frp.fran} contrasts with
+Structured synchronous reactive programming as a complementary programming
+style for reactive applications.
+%
+We believe that FRP is more suitable for data-intensive applications, while 
+SSRP, for control-intensive applications.
+%
+On the one hand, FRP uses declarative formulas to specify continuous functions 
+over time, such as for physics or data constraints among entities.
+%
+On the other hand, describing a sequence of steps in FRP requires to encode 
+explicit state machines so that functions can switch behavior depending on the 
+current state.
+%
+FRP has been successfully used to implement a 3D first person shooting game
+from scratch, but with performance considerations~\cite{games.frag}.
+%
+We rewrote an existing game in small steps while keeping it working.
+Although we do not provide a performance evaluation (Pingus is not performance
+sensitive), previous work on \CEU shows that it is comparable to C in the
+context of embedded systems~\cite{ceu.sensys13}.
+Nonetheless, given the tight integration between with C/C++, critical parts of
+games can be preserved in C++ if needed.
 
 \section{Conclusion}
 \label{sec.conclusion}
