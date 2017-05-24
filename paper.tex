@@ -346,9 +346,7 @@ follows:
 \subsection{Finite State Machines}
 \label{sec.pats.fsms}
 
-TODO: falar do state pattern, citar game.patterns, falar que usa estado explicito
-
-\textbf{Case Study: Detecting double-clicks in the \emph{Armageddon button}}
+\subsubsection{Case Study: Detecting Double-Clicks in the \emph{Armageddon Button}}
 
 %\begin{figure}[t]
 %\centering
@@ -514,9 +512,7 @@ self-contained in the \code{loop} body (ln. 4--10).
 Also, these 7 lines of code \emph{only} detect the double click, leaving the
 actual effect to happen outside the loop (ln. 12).
 
-TODO: Structured programming, ...
-
-\textbf{Case Study: The \emph{Bomber action} animation sequence}
+\subsubsection{Case Study: The \emph{Bomber Action} Animation Sequence}
 
 TODO: descrever o que sao actions, exibir imagem da tela com menu de actions e
 seta apontando para pingu sendo clicado e com acao recem ativada
@@ -727,12 +723,63 @@ it from the screen).
 In contrast with the implementation in C++, all actions happen in a contiguous
 chunk of code (ln. 5--30) which handles no extra functionality.
 
+\subsubsection{Summary \& Uses in Pingus}
+
+The structured constructs of \CEU provide some advantages in comparison to 
+explicit state machines:
+%
+\begin{itemize}
+\item They encode all states with direct sequential code, eliminating shared
+      state variables.
+\item They handle all states (and only them) in the same contiguous block,
+      improving code encapsulation.
+\end{itemize}
+%
+Object-oriented games also adopt the \emph{state pattern} to model state
+machines, with subclasses describing each possible state~\cite{games.patterns}.
+However, this approach is not fundamentally different from using \code{switch}
+or \code{if} branches for each possible state.
+
+\begin{figure}[t]
+\begin{verbatim}
+Action       Ceu    C++   Explicit State
+---------   ----   ----   -----------------
+Bomber        23     50   4 state variables
+Bridger       75    100   2 state variables
+Drown          6     15   1 state variable
+Exiter         7     22   2 state variables
+Splashed       6     19   2 state variables
+\end{verbatim}
+\caption{Pingus actions in \CEU and C++.
+\label{tab.actions}
+}
+\end{figure}
+
+Pingus supports 16 actions in the game.
+As Figure~\ref{tab.actions} shows, 5 of them implement at least one state
+machine and are considerable smaller in \CEU in terms of LoCs when eliminating
+the state variables.
+%
+Considering the other 11 actions, the reduction in LoCs is negligible.
+This asymmetry in the implementation of actions illustrates the gains in
+expressiveness when describing state machines in direct style.
+
+%As other examples, detecting mouse dragging in the scenario and in the small
+%map to move the game viewport also involves state machines.
+%State machines also appear in the \emph{FPS counter} and in UI widgets with
+%visual feedback.
+
+Among the 65 implementation files in \CEU, we found 29 cases in 25 files using
+structured mechanisms to substitute states machines.
+They manifest as \code{await} statements in sequence or in aborting constructs
+such as \code{par/or} and \code{watching}.
+
 \subsection{Continuation Passing}
 \label{sec.pats.cps}
 
 TODO: what is this?
 
-\textbf{Case Study: Advancing Pages in the \emph{Story screen}}
+\subsubsection{Case Study: Advancing Pages in the \emph{Story screen}}
 
 %\begin{figure}[t]
 %\centering
@@ -885,10 +932,35 @@ Note that, unlike the implementation in C++, the ``advancing text'' behavior is
 not intermixed with the ``advancing pages'' behavior, instead, it is
 encapsulated inside the inner loop nested with a deeper indentation (ln. 9).
 
+\subsubsection{Summary \& Uses in Pingus}
+
+TODO: case 2
+
+The direct style of \CEU has some advantages in comparison to the 
+continuation-passing style:
+%
+\begin{itemize}
+\item It uses structured control flow (i.e., sequences and loops) instead of 
+      explicit data structures (e.g., stacks) or continuation variables.
+\item The activities are decoupled and do not hold references to one another.
+\item A single parent class describes the flow between the activities in a 
+      self-contained block of code.
+\end{itemize}
+
+Continuation passing typically controls the overall structure of the game,
+such as screen transitions in menus and level progressions.
+%
+\CEU uses the direct style techniques in 5 cases involving screen transitions:
+the main menu, the level menu, the level set menu, the world map loop, and
+the gameplay loop.
+%
+It also uses the same technique for the loop that switches the pingu actions
+during gameplay.
+
 \subsection{Dispatching Hierarchies}
 \label{sec.pats.dispatching}
 
-\textbf{Case Study: \emph{Bomber action} \code{draw} and \code{update} dispatching}
+\subsubsection{Case Study: \emph{Bomber Action} \code{draw} and \code{update} Dispatching}
 
 TODO
 
@@ -1017,10 +1089,37 @@ animation is also alive.
 The radical decoupling between the program hierarchy and reactions to events
 eliminates dispatching chains entirely.
 
+\subsubsection{Summary \& Uses in Pingus}
+
+TODO: case 2
+
+Passive entities subjected to hierarchies require a dispatching architecture
+that makes the reasoning about the program harder:
+
+\begin{itemize}
+\item The full dispatching chain may go through dozens of files.
+\item The dispatching chain may interleave between classes specific to the game
+      and also classes from the game engine (possibly third-party classes).
+\end{itemize}
+
+In C++, the update subsystem touches 39 files with around 100 lines of code
+just to forward \code{update} methods through the dispatching hierarchy.
+For the drawing subsystem, 50 files with around 300 lines of code.
+The implementation in C++ also relies on dispatching hierarchy for
+\code{resize} callbacks, touching 12 files with around 100 lines of code.
+%
+Most of this code is eliminated in \CEU since abstractions can react directly
+to the environment, not depending on hierarchies spread across multiple files.
+
+Note that dispatching hierarchies cross game engine code, suggesting that most
+games use this control-flow pattern heavily.
+In the case of the Pingus engine, we rewrote 9 files from C++ to \CEU, reducing
+them from 515 to 173 LoCs, mostly due to dispatching code removal.
+
 \subsection{Lifespan Hierarchies}
 \label{sec.pats.lifespan}
 
-\textbf{Case Study: Managing the Pingus Lifecycle}
+\subsubsection{Case Study: Managing the Pingus Lifecycle}
 
 %\begin{figure}[t]
 %\centering
@@ -1155,10 +1254,36 @@ The \code{escape} statement (ln. 17) aborts the execution block of the
 Hence, a dynamic instance that terminates naturally leaves no traces in the 
 program.
 
+\subsubsection{Summary \& Uses in Pingus}
+
+TODO: case 2
+
+Lexical lifespan for static instances and natural termination for dynamic
+instances provide some advantages in comparison to lifespan hierarchies through
+containers:
+
+\begin{itemize}
+\item Lexical scope makes an abstraction lifespan explicit in the source code.
+\item The memory for static instances is known at compile time.
+\item Natural termination makes an instance innocuous and, hence, susceptible
+      to immediate reclamation.
+\item Abstraction instances (static or dynamic) never require explicit
+      manipulation of pointers/references.
+\end{itemize}
+
+All entities in a game have an associated lifespan.
+
+The implementation in \CEU has over 200 static instantiations spread across all
+65 files.
+For dynamic entities, it defines 23 pools in 10 files, with almost 96
+instantiations across 37 files.
+Pools are used to hold explosion particles, levels and level sets from files,
+gameplay \& worldmap objects, and UI widgets.
+
 \subsection{Signaling Mechanisms}
 \label{sec.pats.signaling}
 
-\textbf{Case Study: Global Keys and the Options Menu}
+\subsubsection{Case Study: Global Keys and the Options Menu}
 
 %\begin{figure}[t]
 %\centering
@@ -1419,6 +1544,28 @@ dependency cycle and prevent infinite execution.
 Due to the stack-based execution for internal events in
 \CEU~\cite{ceu.sensys13}, programs with mutually-dependent events do not
 create infinite execution loops.
+
+\subsubsection{Summary \& Uses in Pingus}
+
+TODO: case 2
+
+First-class internal events of \CEU provide some advantages in comparison to 
+Boost signals:
+
+\begin{itemize}
+\item They use the same convenient syntax of external events (e.g.,
+      \code{emit}, \code{await}, \code{every}, etc.).
+\item They never create infinite dependency loops.
+\item They do not require explicit unbinding.
+\end{itemize}
+
+The implementation in \CEU uses 39 events for internal communication defined in
+23 files with over 200 invocations of \code{emit} and \code{await} spread in
+over 50 files.
+
+Internal events are used for resizing entities, broadcasting update and draw
+requests, pausing parts of the game, triggering new pingu actions, signalling
+collisions, signalling UI interactions, among many others cases.
 
 \section{Related Work}
 \label{sec.related}
