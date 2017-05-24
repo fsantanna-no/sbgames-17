@@ -218,7 +218,7 @@ In C++, the implementation involves callbacks crossing reactions to successive
 events which manipulate state variables explicitly.
 %
 We only present six cases distributed in the four patterns due to space
-constraints, but we actually documented in detail a total eleven cases in six
+constraints, but we actually documented in detail a total of eleven cases in six
 patterns (we omit the sixth pattern \emph{Signaling Mechanisms} entirely).
 %
 This work focuses on a qualitative analysis for the programming techniques
@@ -517,6 +517,7 @@ Also, these 7 lines of code \emph{only} detect the double click, leaving the
 actual effect to happen outside the loop (ln. 12).
 
 \subsubsection{Case Study: The \emph{Bomber Action} Animation Sequence}
+\label{sec.pats.fsms.2}
 
 %\begin{figure}[t]
 %\centering
@@ -1135,7 +1136,103 @@ them from 515 to 173 LoCs, mostly due to dispatching code removal.
     Entities form a lifespan hierarchy in which a terminating container entity
     automatically destroys its managed children.
 
+\subsubsection{Case Study: Game UI Widgets}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{game-session-arrows}
+\caption{UI children with static lifespan.
+\label{fig.ui}
+}
+\end{figure}
+
+\begin{figure*}[t]
+\begin{minipage}[t]{0.54\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+GameSession::GameSession(<...>) :
+    <...>
+{
+    <...>      // these widgets are always active...
+    btpanel  = new ButtonPanel(<...>);
+    pcounter = new PingusCounter(<...>);
+    smallmap = new SmallMap(<...>);
+    <...>
+    uimgr->add(btpanel);  // ...but are added
+    uimgr->add(pcounter); //  dynamically to the
+    uimgr->add(smallmap); //  dispatching hierarchy
+    <...>
+}
+\end{lstlisting}
+\centering\small{\ax Implementation in C++}
+\end{minipage}
+%
+\begin{minipage}[t]{0.46\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+code/await Game (void) do
+    <...> // other coexisting functionality
+    spawn ButtonPanel(<...>);
+    spawn PingusCounter(<...>);
+    spawn SmallMap(<...>);
+    <...> // other coexisting functionality
+end
+\end{lstlisting}
+\centering\small{\bx Implementation in \CEU}
+\end{minipage}
+%\rule{8.4cm}{0.37pt}
+\caption{ Managing the UI widgets lifecycle.
+\label{lst.pingus}
+}
+\end{figure*}
+
+Figure~\ref{fig.ui} shows the game UI widgets holding the buttons, pingus
+counter, and small map which coexist with the game screen during its whole
+lifespan.
+%
+Figure~\ref{lst.ui} compares the implementations in C++ and \CEU.
+
+In C++, the widgets are created in the constructor of the class
+\code{GameSession} (ln. 5--7), added to a UI container (ln. 9--11), and are
+never removed since they must always be visible.
+Arguably, to better express the intent of making them coexist with the game
+screen, the widgets could be declared as top-level automatic (non-dynamic)
+members.
+However, the class uses a container to automate \code{draw} and \code{update}
+dispatching to the widgets, as discussed in Section~\ref{sec.pats.dispatching}.
+In turn, the container method \code{add} expects dynamically allocated children
+only because they are automatically deallocated inside the container
+destructor.
+%
+The dynamic nature of containers in C++ demand extra caution from programmers:
+%
+\begin{itemize}
+\item When containers are part of a dispatching chain, it gets even harder to
+      know which objects are dispatched:
+      one has to ``simulate'' the program execution and track calls to
+      \code{add} and \code{remove}.
+\item For objects with dynamic lifespan, calls to \code{add} must always have
+      matching calls to \code{remove}:
+      missing calls to \code{remove} lead to memory and CPU leaks (to be
+      discussed as the \emph{lapsed listener} problem in
+      Section~\ref{sec.pats.lifespan.2}).
+\end{itemize}
+
+In Céu, entities that coexist just have to be created in the same lexical
+block.
+%
+Since abstractions can react independently, they do not require a dispatching
+container.
+%
+Lexical lifespan never requires containers, allocation and deallocation, or
+explicit references.
+In addition, all required memory is known at compile time, similarly to
+stack-allocated local variables.
+%
+The \emph{Bomber action} of Section~\ref{sec.pats.fsms.2} also relies on
+lexical scope to delimit the lifespan of the explosion sprite to a single
+frame.
+
 \subsubsection{Case Study: Managing the Pingus Lifecycle}
+\label{sec.pats.lifespan.2}
 
 %\begin{figure}[t]
 %\centering
@@ -1271,8 +1368,6 @@ Hence, a dynamic instance that terminates naturally leaves no traces in the
 program.
 
 \subsubsection{Summary \& Uses in Pingus}
-
-TODO: case 2
 
 Lexical lifespan for static instances and natural termination for dynamic
 instances provide some advantages in comparison to lifespan hierarchies through
