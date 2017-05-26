@@ -794,82 +794,80 @@ such as \code{par/or} and \code{watching}.
     The completion of a long-lasting activity may carry a continuation in the
     game, i.e., some action to execute next.
 
-\subsubsection{Case Study: Advancing Pages in the \emph{Story screen}}
-
-%\begin{figure}[t]
-%\centering
-%\includegraphics[width=\columnwidth]{story-anim}
-%\caption{The \emph{Story screen}.
-%\label{fig.story}
-%}
-%\end{figure}
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{story}
-\caption{Continuation mechanism and state machine for advancing pages in the \emph{Story screen}.
-\label{fig.story}
-}
-\end{figure}
+\subsubsection{ Transition to the \emph{Credits Screen} from the \emph{Story Screen} }
 
 \begin{figure*}[t]
-\begin{minipage}[t]{0.55\linewidth}
+\begin{minipage}[t]{0.50\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
-StoryScreenComponent::StoryScreenComponent (<...>) :
-    <...>
+StoryDot::StoryDot(const FileReader& reader) :
+  credits(false), // do not display by default
 {
-    pages        = <...>; // vector with loaded pages
-    current_page = pages.back(); // first loaded page
-    displayed    = false; // if current is complete
-    <...>
+  <...>
+  reader.read("credits", credits); // from file
 }
 
-<...>   // draw page over time
-
-void StoryScreenComponent::update (<...>) {
-    <...>
-    if (<all-words-appearing>) {
-        displayed = true;
-    }
+void StoryDot::on_click() {
+  <...>
+  push_screen(<StoryScreen>(<...>, credits));
+  <...>
 }
 
-void StoryScreenComponent::next_text() {
-    if (!displayed) {
-        displayed = true;
-        <...>     // remove current page
+///
+
+StoryScreenComp::StoryScreenComp (<...>) :
+  credits(credits),
+  <...>
+{
+  <...>
+}
+
+<...>   // draw and update page
+
+void StoryScreenComp::next_text() {
+  if (!displayed) {
+    <...>
+  } else {
+    <...>
+    if (!pages.empty()) {
+      <...>
     } else {
-        pages.pop_back();
-        if (!pages.empty()) { // next page
-            current_page = pages.back();
-            displayed    = false;
-            <...>
-        } else {
-            <...> // terminates the story screen
-        }
+      if (credits) {
+        replace_screen(<Credits>(<...>));
+      } else {
+        pop_screen();
+      }
     }
+  }
 }
 \end{lstlisting}
 \centering\small{\ax Implementation in C++}
 \end{minipage}
 %
-\begin{minipage}[t]{0.45\linewidth}
+\begin{minipage}[t]{0.50\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
-code/await Story (void) -> bool do
+loop do
+  var int ret = await Worldmap();
+  if ret=={STORY_MAP} or ret=={STORY_CREDITS} then
     <...>
-    event void next_text; // clicks in >>>
-
-    { pages = <...>; } // same as in C++
-    loop i in [0 <- {pages.size()}[ do
-        par/or do
-            watching next_text do
-                <...> // advance text
-            end
-            await next_text;
-        with
-            <...> // redraw _pages[i]
-        end
+    var bool is_click = await Story();
+    if is_click and ret=={STORY_CREDITS} then
+      <...>
+      await Credits();
     end
+  else
+    <...>
+  end
 end
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -891,60 +889,87 @@ end
 \centering\small{\bx Implementation in \CEU}
 \end{minipage}
 %\rule{8.4cm}{0.37pt}
-\caption{ Advancing pages in the \emph{Story Screen}.
+\caption{ Transition from \emph{Story} to \emph{Credits screen}.
 \label{lst.story}
 }
 \end{figure*}
 
-The clickable \emph{blue dots} in the campaign world map transit to ambience
-story screens%
-\footnote{Story screen animation: \url{github.com/an000/p/blob/master/README.md#4} }.
-A story is composed of multiple pages and, inside each page, the words of the
-story appear incrementally over time.
-A first click in the button \code{>>>} fast forwards the words to show the full 
-page.
-A second click advances to the next page, until the story terminates.
-If the page completes before a click (due to the time elapsing), a first click 
-advances to the next page.
-%
+The campaign world map has clickable blue dots for introductory and ending
+ambience stories in the two extremes of the map progress trail.
+For introductory stories, the game returns to the world map after displaying 
+the story pages.
+For ending stories, the game also displays a \emph{Credits screen} before
+returning to the world map.%
+\footnote{Story screen animation: \url{github.com/an000/p/blob/master/README.md#4} }
 
-In C++, the class \code{StoryScreenComponent} in Figure~\ref{lst.story}.a
-implements the method \code{next\_text}, which is a callback for clicks in the
-button \code{>>>}.
+In C++, the class \code{StoryDot} in Figure~\ref{lst.story}.a (ln. 1--12) reads
+the level file (ln. 5) to check whether its an ending story and should, after
+termination, display the \emph{Credits screen}.
 %
-The variable \code{pages} (ln. 4--5, 24--26) is a vector holding each page, but
-which also encodes \emph{continuations} for the story progress:
-each call to \code{next\_text} that advances the story (ln. 23--32) removes the 
-current page (ln. 24) and sets the next action to perform (i.e., ``display a
-new page'') in the variable \code{current\_page} (ln. 26).
-Figure~\ref{fig.story} illustrates the continuation mechanism to advance 
-pages and also a state machine for fast forwarding words (inside the dashed
-rectangle).
-The state variable \code{displayed} (ln. 6,15,20,21,27) switches between the
-behaviors ``advancing text'' and ``advancing pages'', which are both handled
-intermixed inside the method \code{next\_text}.
+The boolean variable \code{credits} is passed to the class
+\code{StoryScreen} (ln. 10) and represents the screen continuation, i.e., what
+to do after displaying the story.
+The class \code{StoryScreen} (not shown) then forwards the continuation even
+further to the auxiliary class \code{StoryScreenComp} (ln. 16--40).
+%
+When the method \code{next\_text} has no pages left to display (ln. 32--38),
+it decides where to go next, depending on the continuation flag
+\code{credits} (ln. 33--37).
 
-The code in \CEU in Figure~\ref{lst.story}.b uses the internal event
-\code{next\_text}, which is emitted from clicks in \code{>>>}.
+In \CEU, the \code{loop} of Figure~\ref{lst.story}.b controls the flow between
+the screens to display as a direct sequence of statements.
 %
-The sequential navigation from page to page uses a loop in direct style
-(ln. 6--15) instead of explicit state variables for the continuation mechanism
-and state machine.
-While the text advances in an inner loop (hidden in ln. 9), we watch the
-\code{next\_text} event that fast forwards it.
-The loop may also eventually terminate with the time elapsing normally.
-This way, we do not need a variable (such as \code{displayed} in C++) to switch 
-between the states ``advancing text'' and ``advancing pages''.
-The \code{par/or} makes the page advance logic to execute in parallel with the
-redrawing code (ln. 13).
-Whenever the page advances, the redrawing code is automatically aborted
-(due to the \code{or} modifier).
-The \code{await next\_text} in sequence (ln. 11) is the condition to advance to
-the next page.
-%
-Note that, unlike the implementation in C++, the ``advancing text'' behavior is
-not intermixed with the ``advancing pages'' behavior, instead, it is
-encapsulated inside the inner loop nested with a deeper indentation (ln. 9).
+We first invoke the \code{Worldmap} (ln. 2), which exhibits the map and let
+the player interact with it until a dot is clicked.
+If the player selects a story dot (ln. 4--9), we invoke the \code{Story}
+and await its termination (ln. 5).
+Finally, we check the returned values (ln. 6) to perhaps display the
+\code{Credits} screen (ln. 8).
+The enclosing loop restores the \code{Worldmap} and repeats the process.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{continuation}
+\caption{ Continuation (C++) vs Direct (\CEU) Styles.
+\label{fig.story}
+}
+\end{figure}
+
+Figure~\ref{fig.story} illustrates the \emph{continuation-passing style} of
+C++ and the \emph{direct style} of \CEU for screen transitions:
+
+\begin{enumerate}
+\item \code{Main Loop} $\longrightarrow$ \code{Worldmap}:
+    \begin{itemize}
+    \item C++ uses an explicit stack to push the \code{Worldmap} screen.
+    \item \CEU invokes the \code{WorldMap} screen expecting a return value
+          (ln. 2).
+    \end{itemize}
+\item \code{Worldmap} (\emph{blue dot click}) $\longrightarrow$ \code{Story}:
+    \begin{itemize}
+    \item C++ pushes the \code{Story} screen passing the continuation flag
+          (ln. 10).
+    \item \CEU stores the \code{Worldmap} return value and invokes the \code{Story} screen
+          (ln. 2,5).
+    \end{itemize}
+\item \code{Story} $\longrightarrow$ \code{Credits}:
+    \begin{itemize}
+    \item C++ replaces the current \code{Story} screen with the \code{Credits}
+          screen (ln. 34).
+    \item \CEU invokes the \code{Credits} screen after the \code{await Story}
+          returns (ln. 8).
+    \end{itemize}
+\item \code{Credits} $\longrightarrow$ \code{Worldmap}:
+    \begin{itemize}
+    \item C++ pops the \code{Credits} screen, going back to the \code{Worldmap}
+          screen.
+          \CEU uses an enclosing \code{loop} to restart the process (ln. 1--13).
+    \end{itemize}
+\end{enumerate}
+
+In contrast with C++, the screens in \CEU are decoupled and only the
+\code{Main Loop} touches them: the \code{Worldmap} has no references to
+\code{Story}, which has no references to \code{Credits}.
 
 \subsubsection{Summary \& Uses in Pingus}
 
@@ -954,7 +979,7 @@ continuation-passing style:
 \begin{itemize}
 \item It uses structured control flow (i.e., sequences and loops) instead of 
       explicit data structures (e.g., stacks) and continuation variables (e.g.
-      indexes).
+      boolean flags).
 \item The activities in sequence are decoupled and do not hold references to
       one another. % TODO: esta no outro exemplo
 \item A single parent class describes the flow between the activities in a 
