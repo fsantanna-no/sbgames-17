@@ -93,6 +93,35 @@ escapeinside={||},
 %% It is disabled by the 'review' option or via the following command:
 % \nocopyrightspace
 
+\usepackage{balance}
+
+% No space between bibliography items:
+\let\oldthebibliography=\thebibliography
+  \let\endoldthebibliography=\endthebibliography
+  \renewenvironment{thebibliography}[1]{%
+    \begin{oldthebibliography}{#1}%
+      \setlength{\parskip}{0ex}%
+      \setlength{\itemsep}{0ex}%
+  }%
+  {%
+    \end{oldthebibliography}%
+  }
+\setlength{\parindent}{5mm}
+
+\newcommand{\compresslist}{
+	\setlength{\itemsep}{1pt}
+	\setlength{\parskip}{0pt}
+	\setlength{\parsep}{0pt}
+}
+
+\newenvironment{itemize*}%
+  {\begin{itemize}%
+    \setlength{\itemsep}{0pt}%
+    \setlength{\parskip}{0pt}}%
+  {\end{itemize}}
+\usepackage{enumitem}
+\setlist{nolistsep}
+
 \begin{document}
 
 \firstsection{Introduction}
@@ -161,6 +190,7 @@ In this sense, callbacks actually disrupt structured programming, becoming
 language with the following characteristics:
 %
 \begin{itemize}
+%\setlength\itemsep{0em}
 \item \emph{Reactive}: code only executes in reactions to events.
 \item \emph{Structured}: programs use structured control-flow mechanisms, such
       as \code{await} (to suspend a line of execution), and \code{par} (to
@@ -188,6 +218,7 @@ We present a case study of rewriting Pingus from C++ to \CEU with the
 contributions as follows:
 %
 \begin{itemize}
+%\setlength\itemsep{0em}
 \item Alternative solutions in idiomatic \CEU with gains in productivity for
       six selected behaviors in the game logic.
 \item An in-depth qualitative analysis of the proposed solutions in comparison
@@ -319,6 +350,7 @@ During the course of the rewriting process, we have identified four abstract
 control-flow patterns which likely apply to other games as well:
 
 \begin{enumerate}
+%\setlength\itemsep{0em}
 \item \emph{Finite State Machines}:
     Event occurrences lead to transitions between states and trigger actions
     comprising the behavior of a game entity.
@@ -537,7 +569,7 @@ code such as redrawing the button.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{bomber-state}
+\includegraphics[width=\columnwidth]{states}
 \caption{ State machine for the \emph{Bomber animation} sequence.
 \label{fig.bomber.fsm}
 }
@@ -603,19 +635,19 @@ void Bomber::draw (SceneContext& gc) {
 code/await Bomber (void) -> ActionName
 do
   <...>
-  spawn Mover();  // movement in the background
-  var Sprite s = spawn Sprite(<...>);
-                  // animation in the background
+  spawn Mover(); // movement in the background
+  var Sprite sprite = spawn Sprite(<...>);
+                 // animation in the background
   watching s do
     // 1. plays a "Oh no!" sound.
     {play_sound("ohno")};
 
     // 2. plays a "Bomb!" sound.
-    await game.update until s.sprite.frame == 10;
+    await game.update until sprite.frame == 10;
     {play_sound("plop")};
 
     // 3. particles, terrain, explosion sprite
-    await game.update until s.sprite.frame == 13;
+    await game.update until sprite.frame == 13;
     spawn PinguParticles(<...>) in particles;
     call Game_Remove({&bomber_radius}, <...>);
     do
@@ -670,6 +702,7 @@ follows%
 \footnote{State machine animation: \url{github.com/an000/p/blob/master/README.md#3} }:
 %
 \begin{enumerate}
+%\setlength\itemsep{0em}
 \item 0th frame:  plays a "Oh no!" sound.
 \item 10th frame: plays a "Bomb!" sound.
 \item 13th frame: throws particles, destroys the terrain, and shows an
@@ -743,6 +776,7 @@ The structured constructs of \CEU introduce some advantages in comparison to
 explicit state machines:
 %
 \begin{itemize}
+%\setlength\itemsep{0em}
 \item They encode all states with direct sequential code, eliminating shared
       state variables.
 \item They handle all states (and only them) in the same contiguous block,
@@ -847,10 +881,10 @@ void StoryScreenComp::next_text() {
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
 loop do
   var int ret = await Worldmap();
-  if ret=={STORY_MAP} or ret=={STORY_CREDITS} then
+  if ret==STORY_MAP or ret==STORY_CREDITS then
     <...>
     var bool is_click = await Story();
-    if is_click and ret=={STORY_CREDITS} then
+    if is_click and ret==STORY_CREDITS then
       <...>
       await Credits();
     end
@@ -927,26 +961,29 @@ Finally, we check the returned values (ln. 6) to perhaps display the
 \code{Credits} screen (ln. 8).
 The enclosing loop restores the \code{Worldmap} and repeats the process.
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=\columnwidth]{continuation}
+\includegraphics[width=\textwidth]{continuation}
 \caption{ Continuation (C++) vs Direct (\CEU) Styles.
 \label{fig.story}
 }
-\end{figure}
+\end{figure*}
 
 Figure~\ref{fig.story} illustrates the \emph{continuation-passing style} of
 C++ and the \emph{direct style} of \CEU for screen transitions:
 
 \begin{enumerate}
+%\setlength\itemsep{0em}
 \item \code{Main Loop} $\longrightarrow$ \code{Worldmap}:
     \begin{itemize}
+    %\setlength\itemsep{0em}
     \item C++ uses an explicit stack to push the \code{Worldmap} screen.
     \item \CEU invokes the \code{WorldMap} screen expecting a return value
           (ln. 2).
     \end{itemize}
 \item \code{Worldmap} (\emph{blue dot click}) $\longrightarrow$ \code{Story}:
     \begin{itemize}
+    %\setlength\itemsep{0em}
     \item C++ pushes the \code{Story} screen passing the continuation flag
           (ln. 10).
     \item \CEU stores the \code{Worldmap} return value and invokes the \code{Story} screen
@@ -954,6 +991,7 @@ C++ and the \emph{direct style} of \CEU for screen transitions:
     \end{itemize}
 \item \code{Story} $\longrightarrow$ \code{Credits}:
     \begin{itemize}
+    %\setlength\itemsep{0em}
     \item C++ replaces the current \code{Story} screen with the \code{Credits}
           screen (ln. 34).
     \item \CEU invokes the \code{Credits} screen after the \code{await Story}
@@ -961,6 +999,7 @@ C++ and the \emph{direct style} of \CEU for screen transitions:
     \end{itemize}
 \item \code{Credits} $\longrightarrow$ \code{Worldmap}:
     \begin{itemize}
+    %\setlength\itemsep{0em}
     \item C++ pops the \code{Credits} screen, going back to the \code{Worldmap}
           screen.
           \CEU uses an enclosing \code{loop} to restart the process (ln. 1--13).
@@ -977,6 +1016,7 @@ The direct style of \CEU has some advantages in comparison to the
 continuation-passing style:
 %
 \begin{itemize}
+%\setlength\itemsep{0em}
 \item It uses structured control flow (i.e., sequences and loops) instead of 
       explicit data structures (e.g., stacks) and continuation variables (e.g.
       boolean flags).
@@ -1005,13 +1045,13 @@ during gameplay.
 
 \subsubsection{Case Study: \emph{Bomber Action} \Code{draw} and \Code{update} Dispatching}
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=\columnwidth]{hierarchy}
+\includegraphics[width=\textwidth]{hierarchy}
 \caption{Dispatching chain for \code{update}.
 \label{fig.hier}
 }
-\end{figure}
+\end{figure*}
 
 \begin{figure*}[t]
 \begin{minipage}[t]{0.50\linewidth}
@@ -1084,6 +1124,7 @@ environment stimulus to the game down to the sprite, we need to follow a long
 chain of 7 method dispatches (Figure~\ref{fig.hier}):
 %
 \begin{enumerate}
+%\setlength\itemsep{0em}
 \item \code{ScreenManager::display} in the main game loop calls \code{update}.
 \item \code{ScreenManager::update} calls \code{last\_screen->update} for the
       active game screen (a \code{GameSession} instance, considering the
@@ -1103,6 +1144,7 @@ Each dispatching step in the chain is necessary considering the game
 architecture:
 %
 \begin{itemize}
+%\setlength\itemsep{0em}
 \item With a single assignment to \code{last\_screen}, we can easily deactivate
       the current screen and redirect all dispatches to a new screen (step 2).
 \item The \code{World} class manages and dispatches events to all game
@@ -1140,6 +1182,7 @@ Passive entities subjected to hierarchies require a dispatching architecture
 that makes the reasoning about the program harder:
 
 \begin{itemize}
+%\setlength\itemsep{0em}
 \item The full dispatching chain may go through dozens of files.
 \item The dispatching chain may interleave between classes specific to the game
       and also classes from the game engine (possibly third-party classes).
@@ -1240,6 +1283,7 @@ However, the dynamic nature of containers in C++ demand extra caution from
 programmers:
 %
 \begin{itemize}
+%\setlength\itemsep{0em}
 \item When containers are part of a dispatching chain, it gets even harder to
       know which objects are dispatched at a given moment:
       one has to ``simulate'' the program execution and track calls to
@@ -1327,7 +1371,7 @@ code/await Pingu (<...>) do
         await game.update;
         if Pingu_Is_Out_Of_Screen() then
             <...>
-            escape {PS_DEAD};
+            escape PS_DEAD;
         end
     end
 end
@@ -1409,6 +1453,7 @@ instances provide some advantages in comparison to lifespan hierarchies through
 containers:
 
 \begin{itemize}
+%\setlength\itemsep{0em}
 \item Lexical scope makes an abstraction lifespan explicit in the source code.
       All entities in a game have an associated lexical lifespan.
 \item The memory for static instances is known at compile time.
