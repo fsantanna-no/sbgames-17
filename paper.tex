@@ -249,6 +249,16 @@ applied during the rewriting process.
 Not all techniques result in reduction in LoCs (especially considering the
 verbose syntax of \CEU), but have other effects such as eliminating shared
 variables and dependencies between classes.
+%
+We employed \emph{live code translation}, i.e., starting from the original
+codebase in C++, we reimplemented piece-by-piece without breaking the game
+compilation and execution.
+%
+This was only possible given the seamless integration between \CEU and
+C/C++~\cite{ceu.sensys13}: the type systems are equivalent and the integration
+happens at the source code level.
+This enables trivial sharing of control and data, i.e., accessing C/C++ data
+and calling C/C++ from \CEU and vice-versa.
 
 The rest of the paper is organized as follows:
 Section~\ref{sec.codebase} gives an overview of the Pingus codebases in C++ and
@@ -285,8 +295,8 @@ misc/              56       46     1.22     miscellaneous functionality
 }
 \end{figure*}
 
-In Pingus, the game logic also accounts for almost half the size of the
-codebase: 18.173 from 39.362 LoCs (46\%) spread across 272 files.
+In Pingus, the game logic accounts for almost half the size of the codebase:
+18.173 from 39.362 LoCs (46\%) spread across 272 files.
 %
 However, about half of the game logic relates to non-reactive code, such as
 dealing with configurations and options, saved games and serialization, maps
@@ -295,7 +305,7 @@ algorithms, etc.
 This part remains unchanged and relies on the integration between \CEU and
 C/C++.
 %
-Therefore, we rewrote 9.186 LoCs spread across 126 files%
+Therefore, we only rewrote 9.186 LoCs spread across 126 files%
 \footnote{Complete codebase: \url{github.com/an000/p/tree/master/cpp}}.
 %
 In order to only consider effective code in the analysis, we then removed all
@@ -306,37 +316,26 @@ originally written in C++%
 We did the same with the implementation in \CEU, resulting in 3.697 dense LoCs%
 \footnote{\CEU codebase: \url{github.com/an000/p/tree/master/all}}.
 %
-Figure~\ref{tab.tree} summarizes the effective codebase in the two
+Figure~\ref{tab.tree} summarizes the effective game logic codebase in the two
 implementations.
 
-Although the sections that follow compare the codebases qualitatively, the
-lines with lower ratio numbers in Figure~\ref{tab.tree} correlate to the parts
-of the game logic that we consider more susceptible to structured reactive
-programming.
+Although our analysis is mostly qualitative, the lines in Figure~\ref{tab.tree}
+with lower ratio numbers correlate to the parts of the game logic that we
+consider more susceptible to structured reactive programming.
 For instance, the \emph{Pingu} behavior (\emph{ratio 0.80}) contains complex
 animations that are affected by timers, game rules, and user interaction.
 In contrast, the \emph{Option screen} (\emph{ratio 0.97}) is a simple UI grid
 with trivial mouse interactions.
 
-As a general rewriting rule, we could identify control-flow behaviors in C++ by
-looking for class members with identifiers resembling verbs, statuses, and
-counters (e.g.,
+As a general rewriting rule, we could identify control-flow behaviors in the
+C++ codebase by looking for class members with identifiers resembling verbs,
+statuses, and counters (e.g.,
 \code{pressed},
 \code{particle\_thrown},
 \code{mode}, and
 \code{delay\_count}).
-Good chances are that variables with these ``suspicious names'' encode some
-form of control-flow progression that cross multiple callback invocations.
-
-We employed \emph{live code translation}, i.e., starting from the original
-codebase in C++, we reimplemented piece-by-piece without breaking the game
-compilation and execution.
-%
-This was only possible given the seamless integration between \CEU and
-C/C++~\cite{ceu.sensys13}: the type systems are equivalent and the integration
-happens at the source code level.
-This enables trivial sharing of control and data, i.e., accessing C/C++ data
-and calling C/C++ from \CEU and vice-versa.
+Good chances are that such variables encode some form of control-flow
+progression that cross multiple callback invocations.
 
 \section{Control-Flow Patterns \& Case Studies}
 \label{sec.pats}
