@@ -186,8 +186,11 @@ In this sense, callbacks actually disrupt structured programming, becoming
 %\footnote{``Escape from Callback Hell'':
 %\url{elm-lang.org/learn/Escape-from-Callback-Hell.elm}}
 
-\CEU~\cite{ceu.sensys13,ceu.mod15} is a C/C++ source compatible programming
-language with the following characteristics:
+In this work, we advocate structured synchronous reactive programming as an
+expressive and productive alternative for game logic development.
+We present a case study of rewriting Pingus from C++ to the programming
+language \CEU~\cite{ceu.sensys13,ceu.mod15}, which has the following
+characteristics:
 %
 \begin{itemize}
 %\setlength\itemsep{0em}
@@ -212,32 +215,24 @@ relationships in the game logic more concisely.
 terms of memory and CPU usage~\cite{ceu.sensys13}.
 The runtime is single threaded and does not rely on garbage collection.
 
-In this work, we advocate structured synchronous reactive programming as an
-expressive and productive alternative for game logic development.
-We present a case study of rewriting Pingus from C++ to \CEU with the
-contributions as follows:
-%
-\begin{itemize}
-%\setlength\itemsep{0em}
-\item Alternative solutions in idiomatic \CEU with gains in productivity for
-      six selected behaviors in the game logic.
-\item An in-depth qualitative analysis of the proposed solutions in comparison
-      to the original implementations in C++.
-\item The identification of four recurrent control-flow patterns that likely
-      apply to other games:
+Our case study demonstrates gains in productivity for six selected behaviors in
+the game logic of Pingus through idiomatic code in \CEU.
+We present an in-depth qualitative analysis of the proposed solutions in
+comparison to the original implementations in C++.
+We also identify four recurrent control-flow patterns that likely apply to
+other games:
         \emph{Finite State Machines},
         \emph{Continuation Passing},
         \emph{Dispatching Hierarchies}, and
         \emph{Lifespan Hierarchies}.
-        %\emph{Signaling Mechanisms}.
-\end{itemize}
 %
 A control-flow pattern is a recurring technique to describe dependencies and
-explicit orders between statements (or groups of statements) in a program.
+explicit orders between statements (or groups of statements) execution in a
+program.
 %For instance, consider how a key press stimulus propagates through the game
 %entities and also what happens with them if the stimulus causes the end of the
 %game.
-%
+
 The rewriting process consisted of identifying sets of callbacks implementing
 control flow in the game and translating them to \CEU using appropriate
 structured constructs.
@@ -394,7 +389,7 @@ Due to space constraints, we omit five other cases and also a fifth pattern
 
 In Pingus, a double click in the \emph{Armageddon button} at the bottom right
 of the screen literally explodes all pingus.%
-\footnote{Double click animation: \url{github.com/an000/p/blob/master/README.md#1} }
+\footnote{Double click animation: \url{github.com/an000/p/#1} }
 
 \begin{figure*}[t]
 \begin{minipage}[t]{0.55\linewidth}
@@ -694,12 +689,12 @@ Figure~\ref{fig.bomber.action}.
 %
 The \emph{Bomber action} explodes the clicked pingu, throwing particles around
 and also destroying the terrain under its radius.%
-\footnote{Bomber action animation: \url{github.com/an000/p/blob/master/README.md#2} }
+\footnote{Bomber action animation: \url{github.com/an000/p/#2} }
 %
 We can model the explosion animation with a sequential state machine
 (Figure~\ref{fig.bomber.fsm}) with effects associated to specific frames as
 follows%
-\footnote{State machine animation: \url{github.com/an000/p/blob/master/README.md#3} }:
+\footnote{State machine animation: \url{github.com/an000/p/#3} }:
 %
 \begin{enumerate}
 %\setlength\itemsep{0em}
@@ -934,7 +929,7 @@ For introductory stories, the game returns to the world map after displaying
 the story pages.
 For ending stories, the game also displays a \emph{Credits screen} before
 returning to the world map.%
-\footnote{Credits screen animation: \url{github.com/an000/p/blob/master/README.md#4} }
+\footnote{Credits screen animation: \url{github.com/an000/p/#4} }
 
 In C++, the class \code{StoryDot} in Figure~\ref{lst.story}.a (ln. 1--12) reads
 the level file (ln. 5) to check whether its an ending story and should, after
@@ -1323,7 +1318,7 @@ frame (Figure~\ref{lst.bomber}, ln. 19--25).
 
 A pingu is a dynamic entity created periodically and destroyed under certain
 conditions, such as falling from a high altitude%
-\footnote{Death of pingus animation: \url{github.com/an000/p/blob/master/README.md#5} }.
+\footnote{Death of pingus animation: \url{github.com/an000/p/#5} }.
 %
 
 \begin{figure*}[t]
