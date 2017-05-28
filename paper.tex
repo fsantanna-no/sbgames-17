@@ -245,6 +245,29 @@ program.
 %entities and also what happens with them if the stimulus causes the end of the
 %game.
 
+\begin{figure*}[t]
+\begin{verbatim}
+Path              Ceu      C++   Ceu/C++    Descritpion
+------------     ----     ----     ----     --------------------------------------------
+game/            2064     2268     0.91     the main gameplay
+  ./              710      679     1.05         main functionality
+  objs/           470      478     0.98         world objects (tiles, traps, etc)
+  pingu/          884     1111     0.80         pingu behaviors
+    ./            343      458     0.75             main functionality
+    actions/      541      653     0.83             pingu actions (bomber, climber, etc)
+worldmap/         468      493     0.95     campaign worldmap
+screens/         1109     1328     0.84     menus and screens
+    option/       347      357     0.97         option menu
+    others/       762      971     0.78         other menus and screens
+misc/              56       46     1.22     miscellaneous functionality
+                 ----     ----     ----
+                 3697     4135     0.89
+\end{verbatim}
+\caption{The Pingus codebase directory tree.
+\label{tab.tree}
+}
+\end{figure*}
+
 The rewriting process consisted of identifying sets of callbacks implementing
 control flow in the game and translating them to \CEU using appropriate
 structured constructs.
@@ -283,29 +306,6 @@ Section~\ref{sec.conclusion} concludes the paper.
 
 \section{The Pingus Codebase}
 \label{sec.codebase}
-
-\begin{figure*}[t]
-\begin{verbatim}
-Path              Ceu      C++   Ceu/C++    Descritpion
-------------     ----     ----     ----     --------------------------------------------
-game/            2064     2268     0.91     the main gameplay
-  ./              710      679     1.05         main functionality
-  objs/           470      478     0.98         world objects (tiles, traps, etc)
-  pingu/          884     1111     0.80         pingu behaviors
-    ./            343      458     0.75             main functionality
-    actions/      541      653     0.83             pingu actions (bomber, climber, etc)
-worldmap/         468      493     0.95     campaign worldmap
-screens/         1109     1328     0.84     menus and screens
-    option/       347      357     0.97         option menu
-    others/       762      971     0.78         other menus and screens
-misc/              56       46     1.22     miscellaneous functionality
-                 ----     ----     ----
-                 3697     4135     0.89
-\end{verbatim}
-\caption{The Pingus codebase directory tree.
-\label{tab.tree}
-}
-\end{figure*}
 
 In Pingus, the game logic accounts for almost half the size of the codebase:
 18.173 from 39.362 LoCs (46\%) spread across 272 files.
@@ -580,7 +580,22 @@ code such as redrawing the button.
 }
 \end{figure}
 
-\begin{figure*}[th!]
+\begin{figure}[t]
+\begin{verbatim}
+Action       Ceu    C++   Explicit State
+---------   ----   ----   -----------------
+Bomber        23     50   4 state variables
+Bridger       75    100   2 state variables
+Drown          6     15   1 state variable
+Exiter         7     22   2 state variables
+Splashed       6     19   2 state variables
+\end{verbatim}
+\caption{Pingus actions in \CEU and C++.
+\label{tab.actions}
+}
+\end{figure}
+
+\begin{figure*}[!t]
 \begin{minipage}[t]{0.50\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
 Bomber::Bomber (Pingu* p) :
@@ -794,21 +809,6 @@ machines with subclasses describing each possible state~\cite{games.patterns}.
 However, this approach is not fundamentally different from Pingus' use of
 \code{switch} or \code{if} branches for each possible state.
 
-\begin{figure}[t]
-\begin{verbatim}
-Action       Ceu    C++   Explicit State
----------   ----   ----   -----------------
-Bomber        23     50   4 state variables
-Bridger       75    100   2 state variables
-Drown          6     15   1 state variable
-Exiter         7     22   2 state variables
-Splashed       6     19   2 state variables
-\end{verbatim}
-\caption{Pingus actions in \CEU and C++.
-\label{tab.actions}
-}
-\end{figure}
-
 Pingus supports 16 actions in the game.
 As Figure~\ref{tab.actions} shows, 5 of them implement at least one state
 machine and are considerable smaller in \CEU in terms of LoCs after eliminating
@@ -934,6 +934,14 @@ end
 }
 \end{figure*}
 
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{continuation}
+\caption{ Continuation (C++) vs Direct (\CEU) Styles.
+\label{fig.story}
+}
+\end{figure*}
+
 The campaign world map has clickable blue dots in the two extremes of the
 progress trail for introductory and ending ambience stories, respectively.
 For introductory stories, the game returns to the world map after displaying 
@@ -969,9 +977,63 @@ The enclosing loop restores the \code{Worldmap} and repeats the process.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{continuation}
-\caption{ Continuation (C++) vs Direct (\CEU) Styles.
-\label{fig.story}
+\includegraphics[width=\textwidth]{hierarchy}
+\caption{Dispatching chain for \code{update}.
+\label{fig.hier}
+}
+\end{figure*}
+
+\begin{figure*}[t]
+\begin{minipage}[t]{0.50\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+class Bomber : public PinguAction {
+    <...>
+    Sprite sprite;
+}
+
+Bomber::Bomber (<...>) : <...> {
+    sprite.load(<...>);
+    <...>
+}
+
+void Bomber::update () {
+    sprite.update();
+}
+
+void Bomber::draw (SceneContext& gc) {
+    <...>
+    gc.color().draw(sprite, <...>);
+}
+\end{lstlisting}
+\centering\small{\ax Implementation in C++}
+\end{minipage}
+%
+\begin{minipage}[t]{0.50\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+code/await Bomber (void) -> ActionName do
+    <...>
+    var Sprite sprite = spawn Sprite(<...>);
+    <...>
+end
+
+
+
+
+
+
+
+
+
+
+
+
+.
+\end{lstlisting}
+\centering\small{\bx Implementation in \CEU}
+\end{minipage}
+%\rule{8.4cm}{0.37pt}
+\caption{ \emph{Bomber action} \code{draw} and \code{update} dispatching.
+\label{lst.hier}
 }
 \end{figure*}
 
@@ -1052,68 +1114,6 @@ during gameplay (e.g., \emph{walking} to \emph{jumping} and back to
 
 \subsubsection{Case Study: \emph{Bomber Action} \Code{draw} and \Code{update} Dispatching}
 
-\begin{figure*}[t]
-\centering
-\includegraphics[width=\textwidth]{hierarchy}
-\caption{Dispatching chain for \code{update}.
-\label{fig.hier}
-}
-\end{figure*}
-
-\begin{figure*}[t]
-\begin{minipage}[t]{0.50\linewidth}
-\begin{lstlisting}[numbers=left,xleftmargin=3em]
-class Bomber : public PinguAction {
-    <...>
-    Sprite sprite;
-}
-
-Bomber::Bomber (<...>) : <...> {
-    sprite.load(<...>);
-    <...>
-}
-
-void Bomber::update () {
-    sprite.update();
-}
-
-void Bomber::draw (SceneContext& gc) {
-    <...>
-    gc.color().draw(sprite, <...>);
-}
-\end{lstlisting}
-\centering\small{\ax Implementation in C++}
-\end{minipage}
-%
-\begin{minipage}[t]{0.50\linewidth}
-\begin{lstlisting}[numbers=left,xleftmargin=3em]
-code/await Bomber (void) -> ActionName do
-    <...>
-    var Sprite sprite = spawn Sprite(<...>);
-    <...>
-end
-
-
-
-
-
-
-
-
-
-
-
-
-.
-\end{lstlisting}
-\centering\small{\bx Implementation in \CEU}
-\end{minipage}
-%\rule{8.4cm}{0.37pt}
-\caption{ \emph{Bomber action} \code{draw} and \code{update} dispatching.
-\label{lst.hier}
-}
-\end{figure*}
-
 In C++, the class \code{Bomber} in Figure~\ref{lst.hier}.a declares a
 \code{sprite} member (ln. 3) to handle its animation frames.
 %
@@ -1167,6 +1167,50 @@ architecture:
 %
 The \code{draw} callback also flows through a similar dispatching hierarchy
 until reaching the \code{Sprite} class.
+
+\begin{figure*}[t]
+\begin{minipage}[t]{0.54\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+GameSession::GameSession(<...>) :
+    <...>
+{
+    <...>      // these widgets are always active...
+    btpanel  = new ButtonPanel(<...>);
+    pcounter = new PingusCounter(<...>);
+    smallmap = new SmallMap(<...>);
+    <...>
+    uimgr->add(btpanel);  // ...but are added
+    uimgr->add(pcounter); //  dynamically to the
+    uimgr->add(smallmap); //  dispatching hierarchy
+    <...>
+}
+\end{lstlisting}
+\centering\small{\ax Implementation in C++}
+\end{minipage}
+%
+\begin{minipage}[t]{0.46\linewidth}
+\begin{lstlisting}[numbers=left,xleftmargin=3em]
+code/await Game (void) do
+    <...> // other coexisting functionality
+    spawn ButtonPanel(<...>);
+    spawn PingusCounter(<...>);
+    spawn SmallMap(<...>);
+    <...> // other coexisting functionality
+end
+
+
+
+
+
+.
+\end{lstlisting}
+\centering\small{\bx Implementation in \CEU}
+\end{minipage}
+%\rule{8.4cm}{0.37pt}
+\caption{ Managing the UI widgets lifecycle.
+\label{lst.ui}
+}
+\end{figure*}
 
 In \CEU, the \code{Bomber} abstraction presented in Figure~\ref{lst.hier}.b
 spawns a \code{Sprite} animation instance on its body (ln. 3).
@@ -1223,50 +1267,6 @@ dispatching code removal.
 \label{fig.ui}
 }
 \end{figure}
-
-\begin{figure*}[t]
-\begin{minipage}[t]{0.54\linewidth}
-\begin{lstlisting}[numbers=left,xleftmargin=3em]
-GameSession::GameSession(<...>) :
-    <...>
-{
-    <...>      // these widgets are always active...
-    btpanel  = new ButtonPanel(<...>);
-    pcounter = new PingusCounter(<...>);
-    smallmap = new SmallMap(<...>);
-    <...>
-    uimgr->add(btpanel);  // ...but are added
-    uimgr->add(pcounter); //  dynamically to the
-    uimgr->add(smallmap); //  dispatching hierarchy
-    <...>
-}
-\end{lstlisting}
-\centering\small{\ax Implementation in C++}
-\end{minipage}
-%
-\begin{minipage}[t]{0.46\linewidth}
-\begin{lstlisting}[numbers=left,xleftmargin=3em]
-code/await Game (void) do
-    <...> // other coexisting functionality
-    spawn ButtonPanel(<...>);
-    spawn PingusCounter(<...>);
-    spawn SmallMap(<...>);
-    <...> // other coexisting functionality
-end
-
-
-
-
-
-.
-\end{lstlisting}
-\centering\small{\bx Implementation in \CEU}
-\end{minipage}
-%\rule{8.4cm}{0.37pt}
-\caption{ Managing the UI widgets lifecycle.
-\label{lst.ui}
-}
-\end{figure*}
 
 Figure~\ref{fig.ui} shows the game UI widgets with action buttons, score
 counters, and a small map which all coexist with the game screen during its
