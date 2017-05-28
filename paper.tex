@@ -200,7 +200,7 @@ characteristics:
       combine multiple lines of execution).
 \item \emph{Synchronous}: reactions run atomically and to completion on each
       line of execution.
-      There's no implicit preemption or real parallelism, resulting in
+      There is no implicit preemption or real parallelism, resulting in
       deterministic execution.
 \end{itemize}
 %
@@ -349,8 +349,8 @@ control-flow patterns which likely apply to other games as well:
     Event occurrences lead to transitions between states and trigger actions
     comprising the behavior of a game entity.
 \item \emph{Continuation Passing}:
-    The completion of a long-lasting activity may carry a continuation in the
-    game, i.e., some action to execute next.
+    The completion of a long-lasting activity in the game may carry a
+    continuation, i.e., some action to execute next.
 \item \emph{Dispatching Hierarchies}:
     Entities form a dispatching hierarchy in which a container that receives a
     stimulus automatically forwards it to its managed children.
@@ -628,10 +628,10 @@ void Bomber::draw (SceneContext& gc) {
 code/await Bomber (void) -> ActionName
 do
   <...>
-  spawn Mover(); // movement in the background
+  spawn Mover(); // movement in background
   var Sprite sprite = spawn Sprite(<...>);
-                 // animation in the background
-  watching s do
+               // frame animation in background
+  watching sprite do
     // 1. plays a "Oh no!" sound.
     {play_sound("ohno")};
 
@@ -645,7 +645,7 @@ do
     call Game_Remove({&bomber_radius}, <...>);
     do
       <...>
-      spawn Sprite(<...>);      // explosion
+      spawn Sprite(<...>); // explosion
 
       // 4. tick: hides the explosion sprite
       await game.update;
@@ -819,8 +819,8 @@ They typically manifest as \code{await} statements in sequence.
 \subsection{Continuation Passing}
 \label{sec.pats.cps}
 
-    The completion of a long-lasting activity may carry a continuation in the
-    game, i.e., some action to execute next.
+    The completion of a long-lasting activity in the game may carry a
+    continuation, i.e., some action to execute next.
 
 \subsubsection{ Transition to the \emph{Credits Screen} from the \emph{Story Screen} }
 
@@ -875,7 +875,7 @@ void StoryScreenComp::next_text() {
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
 loop do
   var int ret = await Worldmap();
-  if ret==STORY_MAP or ret==STORY_CREDITS then
+  if ret==STORY_CREDITS or ret==STORY_BACK then
     <...>
     var bool is_click = await Story();
     if is_click and ret==STORY_CREDITS then
@@ -922,17 +922,17 @@ end
 }
 \end{figure*}
 
-The campaign world map has clickable blue dots for introductory and ending
-ambience stories in the two extremes of the map progress trail.
+The campaign world map has clickable blue dots in the two extremes of the
+progress trail for introductory and ending ambience stories, respectively.
 For introductory stories, the game returns to the world map after displaying 
 the story pages.
 For ending stories, the game also displays a \emph{Credits screen} before
 returning to the world map.%
 \footnote{Credits screen animation: \url{github.com/an000/p/#4} }
 
-In C++, the class \code{StoryDot} in Figure~\ref{lst.story}.a (ln. 1--12) reads
-the level file (ln. 5) to check whether its an ending story and should, after
-termination, display the \emph{Credits screen}.
+In C++, the class \code{StoryDot} in Figure~\ref{lst.story}.a (ln. 1--12) first
+reads the level file (ln. 5) to check whether its an ending story and should,
+after termination, display the \emph{Credits screen}.
 %
 The boolean variable \code{credits} is passed to the class
 \code{StoryScreen} (ln. 10) and represents the screen continuation, i.e., what
@@ -942,13 +942,13 @@ further to the auxiliary class \code{StoryScreenComp} (ln. 16--40).
 %
 When the method \code{next\_text} has no pages left to display (ln. 32--38),
 it decides where to go next, depending on the continuation flag
-\code{credits} (ln. 33--37).
+\code{credits} (ln. 33).
 
 In \CEU, the \code{loop} of Figure~\ref{lst.story}.b controls the flow between
 the screens to display as a direct sequence of statements.
 %
 We first invoke the \code{Worldmap} (ln. 2), which exhibits the map and let
-the player interact with it until a dot is clicked.
+the player interact with it (e.g., walking around) until a dot is clicked.
 If the player selects a story dot (ln. 4--9), we invoke the \code{Story}
 and await its termination (ln. 5).
 Finally, we check the returned values (ln. 6) to perhaps display the
@@ -972,7 +972,7 @@ C++ and the \emph{direct style} of \CEU for screen transitions:
     \begin{itemize}
     %\setlength\itemsep{0em}
     \item C++ uses an explicit stack to push the \code{Worldmap} screen.
-    \item \CEU invokes the \code{WorldMap} screen expecting a return value
+    \item \CEU invokes the \code{Worldmap} screen expecting a return value
           (ln. 2).
     \end{itemize}
 \item \code{Worldmap} (\emph{blue dot click}) $\longrightarrow$ \code{Story}:
@@ -1000,7 +1000,7 @@ C++ and the \emph{direct style} of \CEU for screen transitions:
     \end{itemize}
 \end{enumerate}
 
-In contrast with C++, the screens in \CEU are decoupled and only the
+In contrast with C++, the screens in \CEU are completely decoupled and only the
 \code{Main Loop} touches them: the \code{Worldmap} has no references to
 \code{Story}, which has no references to \code{Credits}.
 
@@ -1029,7 +1029,8 @@ the main menu, the level menu, the level set menu, the world map loop, and
 the gameplay loop.
 %
 It also uses the same technique for the loop that switches the pingu actions
-during gameplay.
+during gameplay (e.g., \emph{walking} to \emph{jumping} and back to
+\emph{walking}).
 
 \subsection{Dispatching Hierarchies}
 \label{sec.pats.dispatching}
@@ -1101,11 +1102,8 @@ end
 }
 \end{figure*}
 
-TODO: code for Sprite update?
-
-In C++, the class \code{Bomber} presented in Figure~\ref{lst.hier}.a declares a
-\code{sprite} member (ln. 3) to handle its animation frames
-(Figure~\ref{fig.bomber.fsm}).
+In C++, the class \code{Bomber} in Figure~\ref{lst.hier}.a declares a
+\code{sprite} member (ln. 3) to handle its animation frames.
 %
 The \code{Sprite} class is part of the game engine and knows how to update and
 render itself.
@@ -1119,9 +1117,10 @@ chain of 7 method dispatches (Figure~\ref{fig.hier}):
 %
 \begin{enumerate}
 %\setlength\itemsep{0em}
-\item \code{ScreenManager::display} in the main game loop calls \code{update}.
+\item \code{ScreenManager::display} in the main game loop calls
+      \code{ScreenManager::update}.
 \item \code{ScreenManager::update} calls \code{last\_screen->update} for the
-      active game screen (a \code{GameSession} instance, considering the
+      active game screen (i.e., a \code{GameSession} instance, considering the
       \code{Bomber}).
 \item \code{GameSession::update} calls \code{world->update}.
 \item \code{World::update} calls \code{obj->update} for each object in the
@@ -1142,11 +1141,11 @@ architecture:
 \item With a single assignment to \code{last\_screen}, we can easily deactivate
       the current screen and redirect all dispatches to a new screen (step 2).
 \item The \code{World} class manages and dispatches events to all game
-      entities, such as all pingus and traps, with the common interface
-      \code{WorldObj} (step 4).
+      entities with a common interface \code{WorldObj}, such as all pingus and
+      traps (step 4).
 \item Since it is common to iterate only over the pingus (vs. all world
       objects), the container \code{PinguHolder} manages all pingus (step 5).
-\item Since a single pingu can change between actions during lifetime, the
+\item Since a single pingu can change its actions during lifetime, the
       \code{action} member decouples them with another level of indirection
       (step 6).
 \item Sprites are part of the game engine and are reusable everywhere (e.g., UI
@@ -1154,8 +1153,8 @@ architecture:
       from actions (step 7).
 \end{itemize}
 %
-The \code{draw} callback flows through the same dispatching hierarchy until
-reaching the \code{Sprite} class.
+The \code{draw} callback also flows through a similar dispatching hierarchy
+until reaching the \code{Sprite} class.
 
 In \CEU, the \code{Bomber} abstraction presented in Figure~\ref{lst.hier}.b
 spawns a \code{Sprite} animation instance on its body (ln. 3).
@@ -1194,7 +1193,7 @@ to the environment, not depending on hierarchies spread across multiple files.
 Note that dispatching hierarchies cross game engine code, suggesting that most
 games also rely heavily on this control-flow pattern.
 In the case of the Pingus engine, we rewrote 9 files from C++ to \CEU, reducing
-them from 515 to 173 LoCs (not shown in Figure~\ref{tab.tree}), mostly due to
+them from 515 to 173 LoCs (not listed in Figure~\ref{tab.tree}), mostly due to
 dispatching code removal.
 
 \subsection{Lifespan Hierarchies}
@@ -1257,7 +1256,7 @@ end
 }
 \end{figure*}
 
-Figure~\ref{fig.ui} shows the game UI widgets with the action buttons, score
+Figure~\ref{fig.ui} shows the game UI widgets with action buttons, score
 counters, and a small map which all coexist with the game screen during its
 whole lifespan.
 
@@ -1289,8 +1288,8 @@ programmers:
       Section~\ref{sec.pats.lifespan.2}).
 \end{itemize}
 
-In \CEU, the UI entities that coexist just have to be created in the same
-lexical block in Figure~\ref{lst.ui}.b (ln. 3--5).
+In \CEU, the UI entities that coexist are just created in the same lexical
+block of the abstraction \code{Game} in Figure~\ref{lst.ui}.b (ln. 3--5).
 %
 Since abstractions can react independently, they do not require a dispatching
 container.
@@ -1316,8 +1315,8 @@ frame (Figure~\ref{lst.bomber}, ln. 19--25).
 %\end{figure}
 
 A pingu is a dynamic entity created periodically and destroyed under certain
-conditions, such as falling from a high altitude%
-\footnote{Death of pingus animation: \url{github.com/an000/p/#5} }.
+conditions, such as falling from a high altitude.%
+\footnote{Death of pingus animation: \url{github.com/an000/p/#5} }
 %
 
 \begin{figure*}[t]
@@ -1335,7 +1334,7 @@ void PinguHolder::update() {
     while(pingu != pingus.end()) {
         (*pingu)->update();
         if ((*pingu)->get_status() == PS_DEAD) {
-            pingu = pingus.erase(pingu);
+            pingu = pingus.remove(pingu);
         }
         <...>
         ++pingu;
@@ -1387,17 +1386,19 @@ to create a new \code{Pingu} and add it to the \code{pingus} collection
 The method \code{PinguHolder::update} (ln. 8--18) checks the state of all
 pingus on every frame, removing those with the dead status (ln. 12--14).
 %
-Entities with dynamic lifespan in C++ require explicit \code{add} and
-\code{remove} calls associated to a container (ln. 4,13).
-Without the \code{erase} call above, a dead pingu would remain in the
-collection still with updates on every frame (ln. 11).
+Without the \code{remove} call, a dead pingu would remain in the collection
+still with updates on every frame (ln. 11).
 Since the \code{draw} behavior for a dead pingu is innocuous, the death could
 go unnoticed when testing it but the program would keep consuming memory and
 CPU time.
+%
 This problem is known as the \emph{lapsed listener}~\cite{games.patterns} and
 also occurs in languages with garbage collection:
 a container typically holds a strong reference to a child (sometimes the only 
 reference to it), and the runtime cannot magically detect it as garbage.
+%
+Entities with dynamic lifespan in C++ always require explicit \code{add} and
+\code{remove} calls associated to a container (ln. 4,13).
 
 \begin{figure}[t]
 \centering
@@ -1408,8 +1409,8 @@ reference to it), and the runtime cannot magically detect it as garbage.
 \end{figure}
 
 \CEU supports \code{pool} declarations to hold dynamic abstraction instances.
-Additionally, the \code{spawn} statement supports a pool identifier to
-associate the new instance with a pool.
+In addition, the \code{spawn} statement supports a pool identifier to associate
+the new instance with a pool.
 %
 The game screen in Figure~\ref{lst.pingus}.b spawns a new \code{Pingu} on every
 invocation of \code{Pingu\_Spawn} (ln. 4--7).
@@ -1489,9 +1490,10 @@ A number of domain-specific languages, frameworks, and techniques have been
 proposed for particular subsystems of the game logic, such as
 animations~\cite{games.anims.2006,games.anims.2003,games.anims.1996,games.anims.1982},
 game state and screen progression~\cite{games.fsms.2006.1,games.fsms.2006.2}, and
-behavior and AI modeling~\cite{games.bts,games.bts.unreal}
+behavior and AI modeling~\cite{games.bts,games.bts.unreal}.
 %
-In Pingus, we employed \CEU at the core of the game for event dispatching
+In Pingus, the adoption of \CEU is not restricted to a specific subsystem.
+We employed \CEU at the very core of the game for event dispatching
 (Section~\ref{sec.pats.dispatching}) and memory management of entities
 (Section~\ref{sec.pats.lifespan}), eliminating parts of the original game
 engine.
@@ -1516,9 +1518,9 @@ SSRP, for control-intensive applications.
 On the one hand, FRP uses declarative formulas to specify continuous functions 
 over time, such as for physics or data constraints among entities.
 %
-On the other hand, describing a sequence of steps in FRP requires to encode 
-explicit state machines so that functions can switch behavior depending on the 
-current state.
+On the other hand, describing a sequence of steps or control-flow dependencies
+in FRP requires to encode explicit state machines so that functions can switch
+behavior depending on the current state.
 %
 FRP has been successfully used to implement a 3D first person shooting game
 from scratch, but with performance considerations~\cite{games.frag}.
@@ -1528,8 +1530,8 @@ working.
 Although we do not provide a performance evaluation (Pingus is not performance
 sensitive), previous work on \CEU shows that it is comparable to C in the
 context of embedded systems~\cite{ceu.sensys13}.
-Nonetheless, given the tight integration between with C/C++, critical parts of
-games can be preserved in C++ if needed.
+Nonetheless, given the tight integration between \CEU and C/C++, critical parts
+of games can be preserved in C++ if needed.
 
 \section{Conclusion}
 \label{sec.conclusion}
