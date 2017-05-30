@@ -83,22 +83,24 @@ escapeinside={||},
         \\ francisco@ime.uerj.br}
 
 \abstract{
-We present a case study of rewriting the video game Pingus from C++ to \CEU, a
-structured synchronous reactive programming language.
+We present a case study of rewriting the video game Pingus from C++ to the
+structured synchronous reactive language \CEU.
 %
-\CEU supports structured primitives that eliminates callbacks, letting
-programmers write code in direct and sequential style, which help describing
-complex control-flow relationships in the game logic more concisely.
+\CEU supports reactive control-flow primitives that eliminate callbacks and let
+programmers write code in direct and sequential style.
+Structured reactivity helps describing complex control-flow relationships in
+the game logic more concisely.
 %
 We demonstrate gains in productivity for six behaviors in the game logic of
-Pingus with an in-depth qualitative analysis of the proposed solutions in \CEU
-in comparison to the original implementations in C++.
+Pingus through a qualitative analysis of the proposed solutions in \CEU in
+comparison to the original implementations in C++.
 %
 We also categorize the behaviors in four recurrent control-flow patterns that
 likely apply to other games.
 \smallskip
 
-\noindent \textbf{Keywords:} TODO, TODO, TODO.
+%\noindent \textbf{Keywords:} \CEU, Game Logic, Event-Driven Programming.
+\noindent \textbf{Keywords:} C++, \CEU, Control Flow, Event-Driven Programming, Game Logic, Synchronous Reactive Programming.
 }
 
 %% Copyright space is enabled by default as required by guidelines.
@@ -192,14 +194,14 @@ elementary capabilities of classical structured
 programming~\cite{rp.deprecating,rp.rescala,sync_async.cooperative}.
 %
 In this sense, callbacks actually disrupt structured programming, becoming
-``our generation's \code{goto}''.%
+``our generation's \emph{goto}''.%
 \footnote{``Callbacks as our Generations' Go To Statement'':
 \url{tirania.org/blog/archive/2013/Aug-15.html}}
 %\footnote{``Escape from Callback Hell'':
 %\url{elm-lang.org/learn/Escape-from-Callback-Hell.elm}}
 
-In this work, we advocate structured synchronous reactive programming as an
-expressive and productive alternative for game logic development.
+In this work, we advocate structured synchronous reactive programming as a more
+productive alternative for game logic development.
 We present a case study of rewriting Pingus from C++ to the programming
 language \CEU~\cite{ceu.sensys13,ceu.mod15}, which has the following
 characteristics:
@@ -208,10 +210,9 @@ characteristics:
 %\setlength\itemsep{0em}
 \item \emph{Reactive}: code only executes in reactions to events.
 \item \emph{Structured}: programs use structured control-flow mechanisms, such
-      as \code{await} (to suspend a line of execution), and \code{par} (to
-      combine multiple lines of execution).
+      as \code{spawn} and \code{await} (to create and suspend an activity).
 \item \emph{Synchronous}: reactions run atomically and to completion on each
-      line of execution.
+      activity.
       There is no implicit preemption or real parallelism, resulting in
       deterministic execution.
 \end{itemize}
@@ -220,8 +221,8 @@ Structured reactive programming eliminates callbacks, letting programmers write
 code in direct and sequential style and recover from the inversion of control
 imposed by the observer pattern~\cite{rp.deprecating}.
 %
-\CEU provides primitives that help describing complex control-flow
-relationships in the game logic more concisely.
+%\CEU provides primitives that help describing complex control-flow
+%relationships in the game logic more concisely.
 %
 \CEU supports logical parallelism with a resource-efficient implementation in
 terms of memory and CPU usage~\cite{ceu.sensys13}.
@@ -556,6 +557,28 @@ code such as redrawing the button.
 \subsubsection{Case Study: The \emph{Bomber Action} Animation Sequence}
 \label{sec.pats.fsms.2}
 
+The player may assign actions to specific pingus, as illustrated in
+Figure~\ref{fig.bomber.action}.
+%
+The \emph{Bomber action} explodes the clicked pingu, throwing particles around
+and also destroying the terrain under its radius.%
+\footnote{Bomber action animation: \url{github.com/an000/p/#2} }
+%
+We can model the explosion animation with a sequential state machine
+(Figure~\ref{fig.bomber.fsm}) with effects associated to specific frames as
+follows%
+\footnote{State machine animation: \url{github.com/an000/p/#3} }:
+%
+\begin{enumerate}
+%\setlength\itemsep{0em}
+\item 0th frame:  plays a "Oh no!" sound.
+\item 10th frame: plays a "Bomb!" sound.
+\item 13th frame: throws particles, destroys the terrain, and shows an
+                  explosion sprite.
+\item Game tick:  hides the explosion sprite.
+\item Last frame: kills the pingu.
+\end{enumerate}
+
 %\begin{figure}[t]
 %\centering
 %\includegraphics[width=\columnwidth]{bomber-anim}
@@ -709,28 +732,6 @@ end
 }
 \end{figure*}
 
-The player may assign actions to specific pingus, as illustrated in
-Figure~\ref{fig.bomber.action}.
-%
-The \emph{Bomber action} explodes the clicked pingu, throwing particles around
-and also destroying the terrain under its radius.%
-\footnote{Bomber action animation: \url{github.com/an000/p/#2} }
-%
-We can model the explosion animation with a sequential state machine
-(Figure~\ref{fig.bomber.fsm}) with effects associated to specific frames as
-follows%
-\footnote{State machine animation: \url{github.com/an000/p/#3} }:
-%
-\begin{enumerate}
-%\setlength\itemsep{0em}
-\item 0th frame:  plays a "Oh no!" sound.
-\item 10th frame: plays a "Bomb!" sound.
-\item 13th frame: throws particles, destroys the terrain, and shows an
-                  explosion sprite.
-\item Game tick:  hides the explosion sprite.
-\item Last frame: kills the pingu.
-\end{enumerate}
-
 In C++, the class \code{Bomber} in Figure~\ref{lst.bomber}.a defines the
 callbacks \code{draw} and \code{update} to manage the state machine described
 above.
@@ -775,6 +776,9 @@ reactions to events (i.e., across \code{await} statements).
 The pingu movement and sprite animation are isolated in two other
 \code{code/await} abstractions and execute in separate through the \code{spawn}
 primitive (ln. 4--5).
+In \CEU, if multiple abstractions react to the same event, the scheduler
+employs lexical order to preserve determinism, i.e., the \code{spawn} that
+appears first in the source code executes first~\cite{ceu.mod15}.
 The event \code{game.update} (ln. 12,16,24) is analogous to the \code{update}
 callback of C++ and occurs on every game frame.
 %
@@ -1548,34 +1552,50 @@ of games can be preserved in C++ if needed.
 \section{Conclusion}
 \label{sec.conclusion}
 
-TODO: non reactive, C++ integration
-- TODO: OO state + methods
-- eliminar estados explicitos com estruturas de controle apropriadas
+We advocate \emph{Structured Synchronous Reactive Programming} as a productive
+alternative for game logic development.
+%
+We compare the implementation of six game behaviors in C++ and \CEU and discuss
+how structured reactive mechanisms can eliminate callbacks and let programmers
+write code in direct style.
 
-We promote the \emph{structured synchronous reactive} programming model of
-\CEU for the development of games.
-We present in-depth use cases categorized in four control-flow patterns applied
-to \emph{Pingus} (an open-source \emph{Lemmings} clone) that likely apply to
-other games.
+We categorize the behaviors in four recurrent control-flow patterns:
+%
+\emph{State machines} are the workhorses of the game logic, appearing in
+animations, AI behaviors, and input handling.
+\CEU can encode states implicitly with sequential statements in the same
+contiguous block, eliminating shared state variables and improving code
+encapsulation.
+%
+\emph{Continuation passing} controls the overall structure of the game, such as
+screen transitions and level progressions.
+Similarly to state machines, \CEU can describe the flow of the game with
+sequential statements in a self-contained block, eliminating explicit
+data structures and continuation variables (e.g., stacks and boolean flags)
+spread across multiple classes.
+%decouple activities by
+%
+\emph{Dispatching hierarchies} spread input events through the game entities
+and serve as a broadcast communication mechanism.
+Event broadcasting is at the core of the semantics of \CEU, allowing entities
+to react directly to inputs and bypass the program hierarchy entirely.
+In C++, a considerable amount of interleavning code in the game logic and
+engine is just destinated to event dispatching.
+%
+\emph{Lifespan hierarchies} manage the memory and visibility of game entities
+through class fields and containers.
+In \CEU, all entities have an associated lexical scope, similarly to local
+variables with automatic memory management.
+This reduces explicit manipulations of pointers and references considerably.
 
-We show how the standard way to program games with objects and callbacks in C++
-hinders structured programming techniques, such as support for sequential
-execution, long-lasting loops, and persisting local variables.
-In this sense, callbacks actually disrupt structured programming, becoming
-["our generation’s goto"][goto] according to Miguel de Icaza.
-
-Overall, we believe that most difficulties in implementing control behavior in 
-game logic is not inherent to this domain, but a result of accidental
-complexity due to the lack of structured abstractions and an appropriate
-concurrency model to handle event-based applications.
-
-TODO: rever summaries por advantage qualitativa vs LoCs
-
-[goto]: tirania.org/blog/archive/2013/Aug-15.html
+Overall, we believe that most difficulties in implementing control-flow
+behavior in game logic is not inherent to this domain, but a result of
+accidental complexity due to the lack of structured abstractions and an
+appropriate concurrency model to handle event-based applications.
 
 \section{Acknowledgments}
 
-We would like to thank Leonardo Kaplan and Alexander Tkachov for early
+The author would like to thank Leonardo Kaplan and Alexander Tkachov for early
 explorations and prototypes of the game rewrite.
 
 \bibliographystyle{abbrv}
