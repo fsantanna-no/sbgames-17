@@ -91,9 +91,9 @@ programmers write code in direct and sequential style.
 Structured reactivity helps describing complex control-flow relationships in
 the game logic more concisely.
 %
-We demonstrate gains in productivity for six behaviors in the game logic of
-Pingus through a qualitative analysis of the proposed solutions in \CEU in
-comparison to the original implementations in C++.
+We show gains in productivity for six behaviors in Pingus through a qualitative
+analysis of the proposed solutions in \CEU in comparison to the original
+implementations in C++.
 %
 We also categorize the behaviors in four recurrent control-flow patterns that
 likely apply to other games.
@@ -195,7 +195,7 @@ programming~\cite{rp.deprecating,rp.rescala,sync_async.cooperative}.
 %
 In this sense, callbacks actually disrupt structured programming, becoming
 ``our generation's \emph{goto}''.%
-\footnote{``Callbacks as our Generations' Go To Statement'':
+\footnote{``Callbacks as our Generations' \emph{goto} Statement'':
 \url{tirania.org/blog/archive/2013/Aug-15.html}}
 %\footnote{``Escape from Callback Hell'':
 %\url{elm-lang.org/learn/Escape-from-Callback-Hell.elm}}
@@ -228,8 +228,8 @@ imposed by the observer pattern~\cite{rp.deprecating}.
 terms of memory and CPU usage~\cite{ceu.sensys13}.
 The runtime is single threaded and does not rely on garbage collection.
 
-Our case study demonstrates gains in productivity for six selected behaviors in
-the game logic of Pingus through idiomatic code in \CEU.
+Our case study shows gains in productivity for six selected behaviors in the
+game logic of Pingus through idiomatic code in \CEU.
 We present an in-depth qualitative analysis of the proposed solutions in
 comparison to the original implementations in C++.
 We also identify four recurrent control-flow patterns that likely apply to
@@ -1221,7 +1221,11 @@ spawns a \code{Sprite} animation instance on its body (ln. 3).
 %
 The \code{Sprite} abstraction can react directly to external \code{update}
 and \code{draw} events, bypassing the program hierarchy entirely.
-External events in \CEU are broadcasted to the entire application.
+Events in \CEU are broadcasted to the entire application in lexical order,
+i.e., an abstraction that appears first in the source code (e.g., ln. 3) reacts
+before another that appears second (e.g., ln. 4).
+As discussed in Section~\ref{sec.pats.fsms.2}, this rule preserves determinism
+and also respects the program static hierarchy.
 While (\emph{and only while}) the bomber abstraction is alive, the sprite
 animation remains alive.
 The radical decoupling between the program hierarchy and reactions to events
