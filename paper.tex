@@ -56,6 +56,7 @@ escapeinside={||},
 }
 
 \newcommand{\CEU}{\textsc{C\'{e}u}\xspace}
+\newcommand{\locs}{\emph{locs}\xspace}
 \newcommand{\code}[1] {{\small{\texttt{#1}}}}
 \newcommand{\Code}[1] {{\texttt{#1}}}
 \newcommand{\ax}{\code{[a]}\xspace}
@@ -92,8 +93,8 @@ Structured reactivity helps describing complex control-flow relationships in
 the game logic more concisely.
 %
 We show gains in productivity for six behaviors in Pingus through a qualitative
-analysis of the proposed solutions in \CEU in comparison to the original
-implementations in C++.
+analysis of the proposed implementations in \CEU in comparison to the originals
+in C++.
 %
 We also categorize the behaviors in four recurrent control-flow patterns that
 likely apply to other games.
@@ -155,16 +156,16 @@ The objective of the game is to guide a group of penguins through a number of
 obstacles towards a designated exit (Figure~\ref{fig.pingus}).
 % \footnote{Pingus gameplay video: \url{www.youtube.com/watch?v=MKrJgIFtJX0}}.
 %
-Pingus is developed in standard object-oriented C++, the \emph{lingua franca}
-of game development \cite{games.patterns}.
+Pingus is developed in standard object-oriented C++, ``the lingua franca of
+game development'' \cite{games.patterns}.
 The codebase%
 \footnote{Official Pingus repository: \url{github.com/Pingus/pingus/}}
-is about 40.000 lines of code (LoCs), divided into
+is about 40.000 lines of code (\locs), divided into
 the engine, level editor, auxiliary libraries, and the game logic itself.
 
 According to Tim Sweeney (of Unreal Engine fame), about half the complexity in
 game development resides in \emph{simulation} (aka \emph{game logic}), but
-which accounts for only 10\% of the CPU budget~\cite{games.sweeney}.
+which only accounts for 10\% of the CPU budget~\cite{games.sweeney}.
 %(Figure~\ref{fig.sweeney}).
 %The game logic ``models the state of the game world as interacting objects
 %evolve over time''.
@@ -183,7 +184,7 @@ higher productivity''.
 %\end{figure}
 
 Object-oriented games rely on the \emph{observer pattern}~\cite{games.patterns}
-to handle events from the environment (e.g., key presses and timers), and also
+to handle events from the environment (e.g., key presses and timers) and also
 as a notification mechanism between entities in the game logic.
 %
 The observers are short-lived callbacks that have to execute as fast as
@@ -211,15 +212,15 @@ language \CEU~\cite{ceu.sensys13,ceu.mod15}.
 \item \emph{Reactive}: code executes in reactions to events.
 \item \emph{Structured}: code uses structured control-flow mechanisms, such
       as \code{spawn} and \code{await} (to create and suspend an activity).
-\item \emph{Synchronous}: reactions run atomically and to completion on each
-      activity.
+\item \emph{Synchronous}: event reactions never overlap and run atomically and
+      to completion on each activity.
       There is no implicit preemption or real parallelism, resulting in
       deterministic execution.
 \end{itemize}
 %
-Structured reactive programming eliminates callbacks, letting programmers write
-code in direct and sequential style in order to recover from the inversion of
-control imposed by the observer pattern~\cite{rp.deprecating}.
+Structured reactive programming recovers from the inversion of control imposed
+by callbacks and the observer pattern~\cite{rp.deprecating}, letting
+programmers write code in direct and sequential style.
 %
 %\CEU provides primitives that help describing complex control-flow
 %relationships in the game logic more concisely.
@@ -233,21 +234,21 @@ Our case study shows gains in productivity for six selected behaviors in the
 game logic of Pingus rewritten in \CEU.
 We present an in-depth qualitative analysis of the proposed solutions in
 comparison to the original implementations in C++.
-We also identify four recurrent control-flow patterns that likely apply to
-other games:
+We also identify four control-flow patterns that likely apply to other games:
         \emph{Finite State Machines},
         \emph{Continuation Passing},
         \emph{Dispatching Hierarchies}, and
         \emph{Lifespan Hierarchies}.
 %
 A control-flow pattern is a recurring technique to describe execution
-dependency and explicit ordering between statements (or groups of statements).
+dependency and/or explicit ordering between statements.
+% (or groups of statements).
 %For instance, consider how a key press stimulus propagates through the game
 %entities and also what happens with them if the stimulus causes the end of the
 %game.
 We focus on a qualitative analysis for the programming techniques that we
 applied during the rewriting process.
-Not all techniques result in reduction in LoCs (especially considering the
+Not all techniques result in reduction of \locs (especially considering the
 verbose syntax of \CEU), but have other effects such as eliminating shared
 variables and dependencies between classes.
 %
@@ -270,8 +271,8 @@ the game compilation and execution.
  9        option/       347      357     0.97         option menu
 10        others/       762      971     0.78         other menus and screens
 11    misc/              56       46     1.22     miscellaneous functionality
-                     ----     ----     ----
-                     3697     4135     0.89
+                       ----     ----     ----
+                       3697     4135     0.89
 \end{verbatim}
 \caption{The Pingus codebase directory tree.
 \label{tab.tree}
@@ -300,43 +301,45 @@ In Pingus, the game logic accounts for almost half the size of the codebase%
 We used \emph{SLOCCount} to count only non-blank, non-comment lines in the
 codebase: \url{www.dwheeler.com/sloccount/}
 }:
-18.173 from 39.362 LoCs (46\%) spread across 272 files.
+18.173 from 39.362 \locs (46\%) spread across 272 files.
 %
 However, about half of the game logic relates to non-reactive code, such as
 dealing with configurations and options, saved games and serialization, maps
 and level descriptions, string formatting, collision detection, graph
 algorithms, etc.
-This part remains unchanged and relies on the integration between \CEU and
-C/C++.
+This part remains unchanged and relies on the seamless integration between \CEU
+and C/C++~\cite{ceu.sensys13}: the type systems are equivalent and the
+integration happens at the source code level.
+This enables accessing data and calling C/C++ from \CEU and vice-versa.
 %
-Therefore, we only rewrote 9.186 LoCs spread across 126 files%
+Therefore, we only rewrote 9.186 \locs spread across 126 files%
 \footnote{\label{codebase} Effective codebase: \url{github.com/an000/p/tree/master/}}.
 %
 In order to only consider relevant code in the analysis, we then removed all
 headers, declarations, trivial getters \& setters, and other innocuous
-statements, resulting 4.135 dense LoCs spread across 70 implementation files
+statements, resulting 4.135 dense \locs spread across 70 implementation files
 originally written in C++%
 \footnotemark[\ref{codebase}].
 %\footnote{C++ codebase: \url{github.com/an000/p/tree/master/all}}.
-We did the same with the implementation in \CEU, resulting in 3.697 dense LoCs%
+We did the same with the implementation in \CEU, resulting in 3.697 dense \locs%
 \footnotemark[\ref{codebase}].
 %\footnote{\CEU codebase: \url{github.com/an000/p/tree/master/all}}.
 %
 Figure~\ref{tab.tree} summarizes the effective game logic codebase in the two
 implementations.
 
-Although our analysis is mostly qualitative, the rows in Figure~\ref{tab.tree}
-with lower ratio numbers correlate to the parts of the game logic that we
-consider more susceptible to structured reactive programming.
+Although the analysis in this work is mostly qualitative, the rows with lower
+ratio numbers in Figure~\ref{tab.tree} do correlate with the parts of the game
+logic that we consider more susceptible to structured reactive programming.
 For instance, the \emph{Pingu} behavior (row 4, \emph{ratio 0.80}) contains
 complex animations that are affected by timers, game rules, and user
 interaction.
 In contrast, the \emph{Option screen} (row 9, \emph{ratio 0.97}) is a simple UI
 grid with trivial mouse interactions.
 
-The rewriting process consisted of identifying sets of callbacks implementing
-control flow in the game and translating them to \CEU using appropriate
-structured constructs.
+The rewriting process consisted of identifying sets of callbacks in C++
+implementing control flow in the game and translating them to \CEU using
+appropriate structured constructs.
 %
 As an example, a double mouse click is characterized by a first click, followed
 by a maximum amount of time, followed by a second click.
@@ -345,14 +348,8 @@ occur in a particular order.
 In C++, the implementation involves callbacks crossing reactions to successive
 events which manipulate state variables explicitly.
 %
-This was only possible given the seamless integration between \CEU and
-C/C++~\cite{ceu.sensys13}: the type systems are equivalent and the integration
-happens at the source code level.
-This enables trivial sharing of control and data, i.e., accessing C/C++ data
-and calling C/C++ from \CEU and vice-versa.
-
-As a general rewriting rule, we could identify control-flow behaviors in the
-C++ codebase by looking for class members with identifiers resembling verbs,
+As a general rewriting rule, we identify control-flow behaviors in the C++
+codebase by looking for class state members with identifiers resembling verbs,
 statuses, and counters (e.g.,
 \code{pressed},
 \code{particle\_thrown},
@@ -364,8 +361,8 @@ progression that cross multiple callback invocations.
 \section{Control-Flow Patterns \& Case Studies}
 \label{sec.pats}
 
-During the rewriting process, we have identified four abstract control-flow
-patterns which likely apply to other games as well:
+During the rewriting process, we have identified four abstract cause/effect
+control-flow patterns which likely apply to other games as well:
 
 \begin{enumerate}
 %\setlength\itemsep{0em}
@@ -434,8 +431,8 @@ void ArmageddonButton::update (float delta) {
     if (pressed) {
         press_time += delta;
         if (press_time > 1.0f) {
-            pressed = false; // give up, 1st click
-            press_time = 0;  // was too long ago
+            pressed = false; // give up, 1st click was
+            press_time = 0;  //         too long ago
         }
     } else {
         <...>
@@ -457,12 +454,12 @@ void ArmageddonButton::on_click (<...>) {
 \begin{minipage}[t]{0.45\linewidth}
 \begin{lstlisting}[numbers=left,xleftmargin=3em]
 do
-    var RectComponent r = <...>;
+    var RectComponent but = <...>;
     <...>
     loop do
-        await r.on_click;
+        await but.on_click;
         watching 1s do
-            await r.on_click;
+            await but.on_click;
             break;
         end
     end
@@ -525,13 +522,13 @@ Otherwise, the \code{pressed} and \code{press\_time} state variables are reset
 %
 Figure~\ref{fig.armageddon.fsm} illustrates how we can model the double-click 
 behavior in C++ as a state machine.
-The circles represent the state of the variables in the class, and the arrows 
-represent the callbacks manipulating state.
+The circles represent the state of the variable \code{pressed}, and the arrows 
+represent the callbacks manipulating it.
 %
-Note in Figure~\ref{lst.armageddon} how the accesses to the state variables are
-spread across the entire class.
-For instance, the distance between the initialization of \code{pressed} (ln.
-3) and the last access to it (ln. 32) is over 40 lines in the original file.
+Note in Figure~\ref{lst.armageddon}.a how the accesses to the state variables
+are spread across the entire class: the distance between the initialization of
+\code{pressed} (ln.  3) and the last access to it (ln. 32) is over 40 lines in
+the original file.
 Arguably, this dispersion of code across methods makes the understanding and 
 maintenance of the double-click behavior more difficult.
 Also, even though the state variables are private, unrelated methods such as 
@@ -562,8 +559,14 @@ loop restarts, falling back to the first click \code{await} (ln. 5).
 Double click detection in \CEU does not rely on state variables and is entirely
 self-contained in the \code{loop} body.
 Also, those 7 lines of code \emph{only} detect the double click, leaving the
-actual effect to happen outside the loop (ln. 12), as well as all unrelated
-code such as redrawing the button.
+actual effect (ln. 12) as well as all unrelated code (such as redrawing the
+button) to happen outside the loop.
+
+The \code{await} allows for nested control-flow structures to suspend execution
+while retaining all enclosing state alive.
+Then, a subsequent reaction to an event resumes execution normally.
+In contrast, method callbacks have a single entry point at the top level of the
+class, in which only instance members remain active between invocations.
 
 \subsubsection{Case Study: The \emph{Bomber Action} Animation Sequence}
 \label{sec.pats.fsms.2}
@@ -789,7 +792,7 @@ The pingu movement and sprite animation are isolated in two other
 primitive (ln. 4--5).
 In \CEU, if multiple abstractions react to the same event, the scheduler
 employs lexical order to preserve determinism, i.e., the \code{spawn} that
-appears first in the source code executes first~\cite{ceu.mod15}.
+appears first in the source code reacts first~\cite{ceu.mod15}.
 The event \code{game.update} (ln. 12,16,24) is analogous to the \code{update}
 callback of C++ and occurs on every game frame.
 %
@@ -813,8 +816,8 @@ explicit state machines:
 %
 \begin{itemize}
 %\setlength\itemsep{0em}
-\item They encode all states with direct sequential code, eliminating shared
-      state variables for control-flow purposes.
+\item They encode all states with direct sequential code, eliminating callbacks
+      and shared state variables for control-flow purposes.
 \item They handle all states (and only them) in the same contiguous block,
       improving code encapsulation.
 \end{itemize}
@@ -822,14 +825,14 @@ explicit state machines:
 Object-oriented games also adopt the \emph{state pattern} to model state
 machines with subclasses describing each possible state~\cite{games.patterns}.
 However, this approach is not fundamentally different from Pingus' use of
-\code{switch} or \code{if} branches for each possible state.
+\code{switch} or \code{if} branches to decode state.
 
 Pingus supports 16 actions in the game.
-5 of them, enumerated in Figure~\ref{tab.actions}, implement at least one state
-machine and are considerable smaller in \CEU in terms of LoCs (after
-eliminating the state variables).
+Five of them implement at least one state machine and are considerable smaller
+in \CEU in terms of \locs (Figure~\ref{tab.actions}).
+%(after eliminating the state variables).
 %
-For the other 11 actions without state machines, the reduction in LoCs is
+For the other 11 actions without state machines, the reduction in \locs is
 negligible.
 %
 This asymmetry illustrates the gains in expressiveness when describing state
@@ -960,31 +963,31 @@ end
 \end{figure*}
 
 The campaign world map has clickable blue dots in the two extremes of the
-progress trail for introductory and ending ambience stories, respectively.
+progress trail to show introductory and closing ambience stories, respectively.
 For introductory stories, the game returns to the world map after showing 
 the story pages.
-For ending stories, the game also shows a \emph{Credits screen} before
+For closing stories, the game also shows a \emph{Credits screen} before
 returning to the world map.%
 \footnote{Credits screen animation: \url{github.com/an000/p/#4} }
 
 In C++, the class \code{StoryDot} in Figure~\ref{lst.story}.a (ln. 1--12) first
-reads the level file (ln. 5) to check whether its an ending story and should,
+reads the level file (ln. 5) to check whether its a closing story and should,
 after termination, show the \emph{Credits screen}.
 %
-The boolean variable \code{credits} is passed to the class
+The boolean variable \code{show\_credits} (ln. 2,5,10) is passed to the class
 \code{StoryScreen} (ln. 10) and represents the screen continuation, i.e., what
 to do after showing the story.
 The class \code{StoryScreen} (not shown) then forwards the continuation even
 further to the auxiliary class \code{StoryScreenComp} (ln. 16--40).
 %
-When the method \code{next\_text} has no pages left to display (ln. 32--38),
-it decides where to go next, depending on the continuation flag
-\code{credits} (ln. 33).
+When the method \code{next\_text} has no story pages left to display
+(ln. 32--38), it decides where to go next, depending on the continuation flag
+\code{show\_credits} (ln. 33).
 
 In \CEU, the \code{loop} of Figure~\ref{lst.story}.b controls the flow between
 the screens to show as a direct sequence of statements.
 %
-We first invoke the \code{Worldmap} (ln. 2), which exhibits the map and let
+We first invoke the \code{Worldmap} (ln. 2), which shows the map and lets
 the player interact with it (e.g., walking around) until a dot is clicked.
 If the player selects a story dot (ln. 4--9), we invoke the \code{Story}
 and await its termination (ln. 5).
@@ -1062,43 +1065,46 @@ C++ and the \emph{direct style} of \CEU for screen transitions:
 \item \code{Main Loop} $\longrightarrow$ \code{Worldmap}:
     \begin{itemize}
     %\setlength\itemsep{0em}
-    \item C++ uses an explicit stack to push the \code{Worldmap} screen.
+    \item C++ uses an explicit stack to push the \code{Worldmap} screen (not
+          shown in Figure~\ref{lst.hier}.a).
     \item \CEU invokes the \code{Worldmap} screen expecting a return value
-          (ln. 2).
+          (Figure~\ref{lst.hier}.b, ln. 2).
     \end{itemize}
 \item \code{Worldmap} (\emph{blue dot click}) $\longrightarrow$ \code{Story}:
     \begin{itemize}
     %\setlength\itemsep{0em}
     \item C++ pushes the \code{Story} screen passing the continuation flag
-          (ln. 10).
+          (Figure~\ref{lst.hier}.a, ln. 10).
     \item \CEU stores the \code{Worldmap} return value and invokes the \code{Story} screen
-          (ln. 2,5).
+          (Figure~\ref{lst.hier}.b, ln. 2,5).
     \end{itemize}
 \item \code{Story} $\longrightarrow$ \code{Credits}:
     \begin{itemize}
     %\setlength\itemsep{0em}
     \item C++ replaces the current \code{Story} screen with the \code{Credits}
-          screen (ln. 34).
+          screen (Figure~\ref{lst.hier}.a, ln. 34).
     \item \CEU invokes the \code{Credits} screen after the \code{await Story}
-          returns (ln. 8).
+          returns (Figure~\ref{lst.hier}.b, ln. 8).
     \end{itemize}
 \item \code{Credits} $\longrightarrow$ \code{Worldmap}:
     \begin{itemize}
     %\setlength\itemsep{0em}
     \item C++ pops the \code{Credits} screen, going back to the \code{Worldmap}
-          screen.
-          \CEU uses an enclosing \code{loop} to restart the process (ln. 1--13).
+          screen (not shown in Figure~\ref{lst.hier}.a).
+    \item \CEU uses an enclosing \code{loop} to restart the process
+          (Figure~\ref{lst.hier}.b, ln. 1--13).
     \end{itemize}
 \end{enumerate}
 
-In contrast with C++, the screens in \CEU are decoupled and only the
-\code{Main Loop} touches them: the \code{Worldmap} has no references to
-\code{Story}, which has no references to \code{Credits}.
+In contrast with C++, the screens in \CEU are decoupled from each other and
+only the \code{Main Loop} touches them: the \code{Worldmap} has no references
+to \code{Story}, which has no references to \code{Credits}.
+Changing the screen arrangements is a matter of adjusting the main loop only.
 
 \subsubsection{Summary \& Pattern Uses in Pingus}
 
 The direct style of \CEU has some advantages in comparison to the 
-continuation-passing style:
+continuation-passing style of C++:
 %
 \begin{itemize}
 %\setlength\itemsep{0em}
@@ -1111,16 +1117,16 @@ continuation-passing style:
       self-contained block of code. % TODO: esta no outro exemplo
 \end{itemize}
 
-Continuation passing typically controls the overall structure of the game,
-such as screen transitions in menus and level progressions.
+Continuation passing typically controls the overall structure of the game in
+C++, such as screen transitions in menus and level progressions.
 %
-\CEU uses the direct style techniques in five cases involving screen
+\CEU adopts the direct style technique in five cases involving screen
 transitions:
 the main menu, the level menu, the level set menu, the world map loop, and
 the gameplay loop.
 %
-It also uses the same technique for the loop that switches the pingu actions
-during gameplay (e.g., \emph{walking} to \emph{falling} and back to
+It also uses the same technique for the loop that switches between pingu
+actions during gameplay (e.g., \emph{walking} to \emph{falling} and back to
 \emph{walking}).
 
 \subsection{Dispatching Hierarchies}
@@ -1130,60 +1136,6 @@ during gameplay (e.g., \emph{walking} to \emph{falling} and back to
     stimulus automatically forwards it to its managed children.
 
 \subsubsection{Case Study: \emph{Bomber Action} \Code{draw} and \Code{update} Dispatching}
-
-In C++, the class \code{Bomber} in Figure~\ref{lst.hier}.a declares a
-\code{sprite} member (ln. 3) to handle its animation frames.
-%
-The \code{Sprite} class is part of the game engine and knows how to update and
-render itself.
-However, the \code{Bomber} still has to respond to \code{update} and
-\code{draw} requests from the game and forward them to the sprite
-(ln. 11--13 and 15--18).
-%
-To understand how the \code{update} callback flows from the original
-environment stimulus to the game down to the sprite, we need to follow a long
-chain of 7 method dispatches (Figure~\ref{fig.hier}):
-%
-\begin{enumerate}
-%\setlength\itemsep{0em}
-\item \code{ScreenManager::display} in the main game loop calls
-      \code{ScreenManager::update} when starting a new frame.
-\item \code{ScreenManager::update} calls \code{screen->update} for the active
-      game screen (i.e., a \code{GameSession} instance, considering the screen
-      in which the \code{Bomber} appears).
-\item \code{GameSession::update} calls \code{world->update}.
-\item \code{World::update} calls \code{objs->update} for each object in the
-      world.
-\item \code{PinguHolder::update} calls \code{pingu->update} for each pingu
-      alive.
-\item \code{Pingu::update} calls \code{action->update} for the active pingu
-      action.
-\item \code{Bomber::update} calls \code{sprite.update}.
-      \code{Sprite::update} finally updates the animation frame.
-\end{enumerate}
-%
-Each dispatching step in the chain is necessary considering the game
-architecture:
-%
-\begin{itemize}
-%\setlength\itemsep{0em}
-\item With a single assignment to \code{screen}, one can easily deactivate the
-current screen and redirect all dispatches to a new screen (step 2).
-\item The \code{World} class manages and dispatches events to all game
-      entities with a common interface \code{WorldObj}, such as all pingus
-      together and traps (step 4).
-\item Since it is common to iterate only over the pingus (vs. all world
-      objects), the container \code{PinguHolder} manages all pingus (step 5).
-\item Since a single pingu can change its actions during lifetime, the
-      \code{action} member decouples them with another level of indirection
-      (step 6).
-\item Sprites are part of the game engine and are reusable everywhere (e.g., UI
-      buttons, world objects, etc.), so it is also convenient to decouple them
-      from actions (step 7).
-\end{itemize}
-%
-The \code{draw} callback also flows through a similar dispatching hierarchy
-until reaching the \code{Sprite} class.
 
 \begin{figure*}[t]
 \begin{minipage}[t]{0.54\linewidth}
@@ -1229,6 +1181,60 @@ end
 }
 \end{figure*}
 
+In C++, the class \code{Bomber} in Figure~\ref{lst.hier}.a declares a
+\code{sprite} member (ln. 3) to handle its animation frames.
+%
+The \code{Sprite} class is part of the game engine and knows how to update and
+render itself.
+However, the \code{Bomber} still has to respond to \code{update} and
+\code{draw} requests from the game and forward them to the sprite
+(ln. 11--13 and 15--18).
+%
+To understand how the \code{update} callback flows from the original
+environment stimulus to the game down to the sprite, we need to follow a long
+chain of 7 method dispatches (Figure~\ref{fig.hier}):
+%
+\begin{enumerate}
+%\setlength\itemsep{0em}
+\item \code{ScreenManager::display} in the main game loop calls
+      \code{ScreenManager::update} when starting a new frame.
+\item \code{ScreenManager::update} calls \code{screen->update} for the active
+      game screen (i.e., a \code{GameSession} instance, considering the screen
+      in which the \code{Bomber} appears).
+\item \code{GameSession::update} calls \code{world->update}.
+\item \code{World::update} calls \code{objs->update} for each object in the
+      world.
+\item \code{PinguHolder::update} calls \code{pingu->update} for each pingu
+      alive.
+\item \code{Pingu::update} calls \code{action->update} for the active pingu
+      action.
+\item \code{Bomber::update} calls \code{sprite.update}.
+      \code{Sprite::update} finally updates the animation frame.
+\end{enumerate}
+%
+Each dispatching step in the chain is necessary considering the game
+architecture:
+%
+\begin{itemize}
+%\setlength\itemsep{0em}
+\item With a single assignment to \code{screen}, one can easily deactivate the
+current screen and redirect all dispatches to a new screen (step 2).
+\item The \code{World} class manages and dispatches events to all game
+      entities with a common interface \code{WorldObj}, such as the pingus and
+      traps (step 4).
+\item Since it is common to iterate only over the pingus (vs. all world
+      objects), the container \code{PinguHolder} manages all pingus (step 5).
+\item Since a single pingu can change its actions during lifetime, the
+      \code{action} member decouples them with another level of indirection
+      (step 6).
+\item Sprites are part of the game engine and are reusable everywhere (e.g., UI
+      buttons, world objects, etc.), so it is also convenient to decouple them
+      from actions (step 7).
+\end{itemize}
+%
+The \code{draw} callback also flows through a similar dispatching hierarchy
+until reaching the \code{Sprite} class.
+
 In \CEU, the \code{Bomber} abstraction presented in Figure~\ref{lst.hier}.b
 spawns a \code{Sprite} animation instance on its body (ln. 3).
 %
@@ -1238,9 +1244,9 @@ Events in \CEU are broadcasted to the entire application in lexical order,
 i.e., an abstraction that appears first in the source code (e.g., ln. 3) reacts
 before another one that appears second (e.g., ln. 4).
 As discussed in Section~\ref{sec.pats.fsms.2}, this rule preserves determinism
-and also respects the program static hierarchy.
+and also conforms to the program static hierarchy.
 While (\emph{and only while}) the bomber abstraction is alive, the sprite
-animation remains alive.
+animation remains alive and reacts to the \code{update} and \code{draw} events.
 The radical decoupling between the program hierarchy and reactions to events
 eliminates dispatching chains entirely.
 Note that one can still declare a local event to restrict its visibility like
@@ -1269,9 +1275,9 @@ to the environment, not depending on hierarchies spread across multiple files.
 
 Note that dispatching hierarchies cross game engine code, suggesting that most
 games also rely heavily on this control-flow pattern.
-In the case of the Pingus engine, we rewrote 9 files from C++ to \CEU, reducing
-them from 515 to 173 LoCs (not listed in Figure~\ref{tab.tree}), mostly due to
-dispatching code removal.
+In the case of the Pingus engine, we rewrote 9 files with a reduction from 515
+to 173 \locs (not listed in Figure~\ref{tab.tree}), mostly due to dispatching
+code removal.
 
 \subsection{Lifespan Hierarchies}
 \label{sec.pats.lifespan}
@@ -1290,7 +1296,7 @@ dispatching code removal.
 \end{figure}
 
 Figure~\ref{fig.ui} shows the game UI widgets with action buttons, score
-counters, and a small map which all coexist with the game screen during its
+counters, and a small map, all coexisting with the game screen during its
 whole lifespan.
 
 In C++, the widgets are created in the constructor of the class
@@ -1317,40 +1323,9 @@ programmers:
 \item For objects with dynamic lifespan, calls to \code{add} must always have
       matching calls to \code{remove}:
       missing calls to \code{remove} lead to memory and CPU leaks (to be
-      discussed as the \emph{lapsed listener} problem in
+      discussed as the \emph{lapsed listener problem} in
       Section~\ref{sec.pats.lifespan.2}).
 \end{itemize}
-
-In \CEU, the UI entities that coexist are just created in the same lexical
-block of the abstraction \code{Game} in Figure~\ref{lst.ui}.b (ln. 3--5).
-%
-Since abstractions can react independently, they do not require a dispatching
-container.
-%
-Lexical lifespan never requires containers, allocation and deallocation, or
-explicit references.
-In addition, all required memory is known at compile time, similarly to
-stack-allocated local variables.
-%
-The \emph{Bomber action} of Section~\ref{sec.pats.fsms.2} also relies on
-lexical scope to delimit the lifespan of the explosion sprite to a single
-frame (Figure~\ref{lst.bomber}, ln. 19--25).
-
-\subsubsection{Case Study: Dynamic Pingus Lifecycle}
-\label{sec.pats.lifespan.2}
-
-%\begin{figure}[t]
-%\centering
-%\includegraphics[width=\columnwidth]{pingus_create_die-anim}
-%\caption{Creation and death of pingus.
-%\label{fig.pingus_create_die}
-%}
-%\end{figure}
-
-A pingu is a dynamic entity created periodically and destroyed under certain
-conditions, such as falling from a high altitude.%
-\footnote{Death of pingus animation: \url{github.com/an000/p/#5} }
-%
 
 \begin{figure*}[t]
 \begin{minipage}[t]{0.50\linewidth}
@@ -1410,6 +1385,37 @@ end
 }
 \end{figure*}
 
+In \CEU, the UI entities that coexist are simply created in the same lexical
+block of the \code{Game} abstraction in Figure~\ref{lst.ui}.b (ln. 3--5).
+%
+Since abstractions can react independently, they do not require a dispatching
+container.
+%
+Lexical lifespan never requires containers, allocation and deallocation, or
+explicit references.
+In addition, all required memory is known at compile time, similarly to
+stack-allocated local variables.
+%
+The \emph{Bomber action} of Section~\ref{sec.pats.fsms.2} also relies on
+lexical scope to delimit the lifespan of the explosion sprite into a single
+frame (Figure~\ref{lst.bomber}, ln. 19--25).
+
+\subsubsection{Case Study: Dynamic Pingus Lifecycle}
+\label{sec.pats.lifespan.2}
+
+%\begin{figure}[t]
+%\centering
+%\includegraphics[width=\columnwidth]{pingus_create_die-anim}
+%\caption{Creation and death of pingus.
+%\label{fig.pingus_create_die}
+%}
+%\end{figure}
+
+A pingu is a dynamic entity created periodically and destroyed under certain
+conditions, such as falling from a high altitude.%
+\footnote{Death of pingus animation: \url{github.com/an000/p/#5} }
+%
+
 In C++, the class \code{PinguHolder} in Figure~\ref{lst.pingus}.a is a
 container that holds all alive pingus.
 %
@@ -1443,7 +1449,7 @@ Entities with dynamic lifespan in C++ always require explicit matching
 
 \CEU supports \code{pool} declarations to hold dynamic abstraction instances.
 In addition, the \code{spawn} statement supports a pool identifier to associate
-the new instance with a pool.
+a new instance with a pool.
 %
 The game screen in Figure~\ref{lst.pingus}.b spawns a new \code{Pingu} on every
 invocation of \code{Pingu\_Spawn} (ln. 4--7).
@@ -1452,7 +1458,7 @@ The \code{spawn} statement (ln. 6) specifies the pool declared at the top-level
 block of the game screen (ln. 3).
 In this case, the lifespan of the new instances follows the scope of the pool
 (ln. 1--9) instead of the enclosing scope of the \code{spawn} statement
-(ln. 4--7).
+(ln. 4--7), surviving the call to \code{Pingu\_Spawn}.
 Since pools are also subject to lexical scope, the lifespan of all dynamically
 allocated pingus is constrained to the game screen.
 %
@@ -1487,16 +1493,16 @@ containers:
 \item The memory for static instances is known at compile time.
 \item Natural termination makes an instance innocuous and, hence, susceptible
       to immediate reclamation.
-\item Abstraction instances (static or dynamic) never require explicit
-      manipulation of pointers/references.
+\item Instances (static or dynamic) never require explicit manipulation of
+      pointers/references.
 \end{itemize}
 
 The implementation in \CEU has over 200 static instantiations spread across all
 65 files.
 For dynamic entities, it defines 23 pools in 10 files, with almost 96
 instantiations across 37 files.
-Pools are used to hold explosion particles, levels and level sets from files,
-gameplay \& worldmap objects, and also UI widgets.
+Pools are used to hold explosion particles, levels and level sets loaded from
+files, gameplay \& worldmap objects, and also UI widgets.
 
 \section{Related Work}
 \label{sec.related}
@@ -1510,14 +1516,14 @@ The original Pingus in C++ uses variations of the
     \emph{visitor} (Sections~\ref{sec.pats.dispatching}~and~\ref{sec.pats.lifespan}), and
     \emph{observer} (to handle events in general)
 patterns as implementation techniques to achieve the desired higher-level
-control-flow patterns.
+control-flow patterns described in the paper.
 %
-\CEU overcomes the need of behavioral patterns with a semantics that supports
-structured control-flow mechanisms and event-based communication via broadcast.
+\CEU overcomes the need of behavioral patterns with support for structured
+control-flow mechanisms and event-based communication via broadcast.
 %
-As an example, the \emph{state pattern} for the bomber animation in C++ in
-Section~\ref{sec.pats.fsms} becomes a series of blocks separated by
-\code{await} statements in \CEU.
+%As an example, the \emph{state pattern} for the bomber animation in C++ in
+%Section~\ref{sec.pats.fsms} becomes a series of blocks separated by
+%\code{await} statements in \CEU.
 
 A number of domain-specific languages, frameworks, and techniques have been
 proposed for particular subsystems of the game logic, such as
@@ -1576,7 +1582,7 @@ We compare the implementation of six game behaviors in C++ and \CEU and discuss
 how structured reactive mechanisms can eliminate callbacks and let programmers
 write code in direct style.
 %
-In the end, we rewrote about 1/4 of the whole codebase (9.186 from 39.362 lines
+Ultimately, we rewrote about 1/4 of the whole codebase (9.186 from 39.362 lines
 of code) which comprises the core of the game logic that is susceptible to
 structured reactive programming.
 %We employed a \emph{live code rewrite}, i.e., starting from the original
@@ -1587,16 +1593,16 @@ We categorize the behaviors in four recurrent control-flow patterns:
 %
 \emph{State machines} are the workhorses of the game logic, appearing in
 animations, AI behaviors, and input handling.
-\CEU can encode states implicitly with sequential statements in the same
-contiguous block, eliminating shared state variables and improving code
-encapsulation.
+\CEU can encode states implicitly with sequential statements,
+% in the same contiguous block,
+eliminating shared state variables and improving code encapsulation.
 %
 \emph{Continuation passing} controls the overall structure of the game, such as
 screen transitions and level progressions.
 Similarly to state machines, \CEU describes the flow of the game as sequential
 statements in self-contained blocks, eliminating explicit data structures and
-continuation variables spread across multiple classes (e.g., stacks and boolean
-flags).
+continuation variables.
+%spread across multiple classes (e.g., stacks and boolean flags).
 %decouple activities by
 %
 \emph{Dispatching hierarchies} disseminate input events through the game
@@ -1610,7 +1616,7 @@ to react directly to inputs and bypass the program hierarchy entirely.
 through class fields and containers.
 In \CEU, all entities have an associated lexical scope, similarly to local
 variables with automatic memory management.
-This reduces explicit manipulation of pointers and references considerably.
+%This reduces explicit manipulation of pointers and references considerably.
 
 Overall, we believe that most difficulties in implementing control-flow
 behavior in game logic is not inherent to this domain, but a result of
