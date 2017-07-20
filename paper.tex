@@ -258,7 +258,7 @@ the game compilation and execution.
 
 \begin{figure*}[t]
 \begin{verbatim}
-      Path              Ceu      C++   Ceu/C++    Descritpion
+      Path              Ceu      C++   Ceu/C++    Description
       ------------     ----     ----     ----     --------------------------------------------
  1    game/            2064     2268     0.91     the main gameplay
  2      ./              710      679     1.05         main functionality
@@ -385,7 +385,7 @@ control-flow patterns which likely apply to other games as well:
 \end{enumerate}
 
 We describe six representative game behaviors in detail distributed in the four
-patterns and analyse their implementations in C++ and \CEU.%
+patterns and analyze their implementations in C++ and \CEU.%
 \footnote{Due to space constraints, we omit three other game behaviors and a
 fifth pattern \emph{Signaling Mechanisms}.}
 
@@ -562,11 +562,13 @@ Also, those 7 lines of code \emph{only} detect the double click, leaving the
 actual effect (ln. 12) as well as all unrelated code (such as redrawing the
 button) to happen outside the loop.
 
-The \code{await} allows for nested control-flow structures to suspend execution
-while retaining all enclosing state alive.
+The \code{await} allows for nested control-flow statements to suspend execution
+while retaining all enclosing state alive, such as local variables and next
+statement to execute.
 Then, a subsequent reaction to an event resumes execution normally.
 In contrast, method callbacks have a single entry point at the top level of the
 class, in which only instance members remain active between invocations.
+In particular, locals and loops cannot persist across invocations.
 
 \subsubsection{Case Study: The \emph{Bomber Action} Animation Sequence}
 \label{sec.pats.fsms.2}
@@ -627,7 +629,7 @@ Drown          6     15   1 state variable
 Exiter         7     22   2 state variables
 Splashed       6     19   2 state variables
 \end{verbatim}
-\caption{Pingus actions in \CEU and C++.
+\caption{Pingus actions in \CEU and C++ in terms of \locs and state variables.
 \label{tab.actions}
 }
 \end{figure}
@@ -1249,8 +1251,8 @@ While (\emph{and only while}) the bomber abstraction is alive, the sprite
 animation remains alive and reacts to the \code{update} and \code{draw} events.
 The radical decoupling between the program hierarchy and reactions to events
 eliminates dispatching chains entirely.
-Note that one can still declare a local event to restrict its visibility like
-a local variable.
+%Note that one can still declare a local event to restrict its visibility like
+%a local variable.
 
 \subsubsection{Summary \& Pattern Uses in Pingus}
 
@@ -1425,8 +1427,8 @@ to create a new \code{Pingu} and add it to the \code{pingus} collection
 The method \code{PinguHolder::update} (ln. 8--18) checks the state of all
 pingus on every frame, removing those with the dead status (ln. 12--14).
 %
-If the programmer disregards the call to \code{remove}, a dead pingu would
-remain in the collection and still update on every frame (ln. 11).
+Note that if the programmer disregards the call to \code{remove}, a dead pingu
+would remain in the collection and still update on every frame (ln. 11).
 Since the \code{draw} behavior for a dead pingu is innocuous, the death could
 go unnoticed when testing it but the program would keep consuming memory and
 CPU time.
@@ -1436,7 +1438,7 @@ also occurs in languages with garbage collection:
 a container typically holds a strong reference to a child (sometimes the only 
 reference to it), and the runtime cannot magically detect it as garbage.
 %
-Entities with dynamic lifespan in C++ always require explicit matching
+Hence, entities with dynamic lifespan always require explicit matching
 \code{add} and \code{remove} calls associated to a container (ln. 4,13).
 
 \begin{figure}[t]
@@ -1511,15 +1513,16 @@ The control-flow patterns closely relate to the \emph{GoF} behavioral
 patterns~\cite{gof}, which are discussed in the context of video games in
 previous work~\cite{games.patterns,games.gof.2015,games.gof.2007}.
 %
-The original Pingus in C++ uses variations of the
+The original Pingus in C++ uses variations of the patterns
     \emph{state} (Sections~\ref{sec.pats.fsms}~and~\ref{sec.pats.cps}),
     \emph{visitor} (Sections~\ref{sec.pats.dispatching}~and~\ref{sec.pats.lifespan}), and
     \emph{observer} (to handle events in general)
-patterns as implementation techniques to achieve the desired higher-level
+as implementation techniques to achieve the desired higher-level
 control-flow patterns described in the paper.
 %
-\CEU overcomes the need of behavioral patterns with support for structured
-control-flow mechanisms and event-based communication via broadcast.
+\CEU overcomes the need of behavioral patterns with support, at the language
+level, for structured control-flow mechanisms and event-based communication via
+broadcast.
 %
 %As an example, the \emph{state pattern} for the bomber animation in C++ in
 %Section~\ref{sec.pats.fsms} becomes a series of blocks separated by
@@ -1562,7 +1565,7 @@ in FRP requires to encode explicit state machines so that functions can switch
 behavior depending on the current state.
 %
 FRP has been successfully used to implement a 3D first person shooting game
-from scratch, but with performance considerations~\cite{games.frag}.
+from scratch, but with some performance considerations~\cite{games.frag}.
 %
 %Instead, we rewrote an existing game and did it in small steps while keeping it
 %working.
@@ -1578,6 +1581,7 @@ of games can be preserved in C++ if needed.
 We advocate \emph{Structured Synchronous Reactive Programming} as a productive
 alternative for game logic development.
 %
+We use the video game \emph{Pingus} as a case study.
 We compare the implementation of six game behaviors in C++ and \CEU and discuss
 how structured reactive mechanisms can eliminate callbacks and let programmers
 write code in direct style.
@@ -1621,7 +1625,7 @@ variables with automatic memory management.
 Overall, we believe that most difficulties in implementing control-flow
 behavior in game logic is not inherent to this domain, but a result of
 accidental complexity due to the lack of structured abstractions and an
-appropriate concurrency model to handle event-based applications.
+appropriate concurrency model to develop event-based applications.
 
 \section{Acknowledgments}
 
