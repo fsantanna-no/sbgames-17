@@ -847,7 +847,9 @@ machines in direct style.
 
 Among all 65 implementation files in \CEU, we found 29 cases in 25 files that
 use structured mechanisms to substitute states machines.
-They typically manifest as \code{await} statements in sequence.
+They typically manifest as \code{await} statements in sequence (e.g.,
+ln. 5,7 in Figure~\ref{lst.armageddon} and ln. 12,16,24 in
+Figure~\ref{lst.bomber}).
 %or in aborting constructs such as \code{par/or} and \code{watching}.
 
 \subsection{Continuation Passing}
@@ -856,7 +858,7 @@ They typically manifest as \code{await} statements in sequence.
     The completion of a long-lasting activity in the game may carry a
     continuation, i.e., some action to execute next.
 
-\subsubsection{ Transition from the \emph{Story Screen}  to the \emph{Credits Screen}}
+\subsubsection{ Transition from \emph{Story}  to \emph{Credits} Screen}
 
 \begin{figure*}[t]
 \begin{minipage}[t]{0.50\linewidth}
@@ -965,7 +967,7 @@ end
 \end{figure*}
 
 The campaign world map has clickable blue dots in the two extremes of the
-progress trail to show introductory and closing ambience stories, respectively.
+map road to show introductory and closing ambience stories, respectively.
 For introductory stories, the game returns to the world map after showing 
 the story pages.
 For closing stories, the game also shows a \emph{Credits screen} before
@@ -973,7 +975,7 @@ returning to the world map.%
 \footnote{Credits screen animation: \url{github.com/an000/p/#4} }
 
 In C++, the class \code{StoryDot} in Figure~\ref{lst.story}.a (ln. 1--12) first
-reads the level file (ln. 5) to check whether its a closing story and should,
+reads the level file (ln. 5) to check whether it is a closing story and should,
 after termination, show the \emph{Credits screen}.
 %
 The boolean variable \code{show\_credits} (ln. 2,5,10) is passed to the class
@@ -1251,6 +1253,7 @@ While (\emph{and only while}) the bomber abstraction is alive, the sprite
 animation remains alive and reacts to the \code{update} and \code{draw} events.
 The radical decoupling between the program hierarchy and reactions to events
 eliminates dispatching chains entirely.
+% TODO: hidden in the language runtime
 %Note that one can still declare a local event to restrict its visibility like
 %a local variable.
 
