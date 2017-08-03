@@ -502,23 +502,23 @@ mouse and timer events.
 The code in the figure focus on the double click detection and hides unrelated
 parts with \code{<...>}.
 %
-The methods \code{update} (ln. 14--26) and \code{on\_click} (ln. 28--34) are
+The methods \code{update} (ln 14--26) and \code{on\_click} (ln 28--34) are
 examples of \emph{short-lived callbacks}, which are pieces of code that execute
 atomically in reaction to external input events.
 The callback \code{on\_click} reacts to mouse clicks detected by the base class
-\code{RectComponent} (ln. 2), while the callback \code{update} continuously
+\code{RectComponent} (ln 2), while the callback \code{update} continuously
 reacts to the passage of time, frame by frame.
 %Callbacks are short lived because they must react to input as fast as possible
 %to let other callbacks execute, keeping the game with real-time responsiveness.
 %
-The class first initializes the variable \code{pressed} (ln. 3) to track the
-first click (ln. 32).
-It also initializes the variable \code{press\_time} (ln. 4) to count the time
-since the first click (ln. 16--17).
+The class first initializes the variable \code{pressed} (ln 3) to track the
+first click (ln 32).
+It also initializes the variable \code{press\_time} (ln 4) to count the time
+since the first click (ln 16--17).
 If another click occurs within 1 second, the class signals the double click to
-the application (ln. 29--30).
+the application (ln 29--30).
 Otherwise, the \code{pressed} and \code{press\_time} state variables are reset
-(ln. 18--21). 
+(ln 18--21).
 %
 Figure~\ref{fig.armageddon.fsm} illustrates how we can model the double-click 
 behavior in C++ as a state machine.
@@ -527,12 +527,12 @@ represent the callbacks manipulating it.
 %
 Note in Figure~\ref{lst.armageddon}.a how the accesses to the state variables
 are spread across the entire class: the distance between the initialization of
-\code{pressed} (ln.  3) and the last access to it (ln. 32) is over 40 lines in
+\code{pressed} (ln  3) and the last access to it (ln 32) is over 40 lines in
 the original file.
 Arguably, this dispersion of code across methods makes the understanding and 
 maintenance of the double-click behavior more difficult.
 Also, even though the state variables are private, unrelated methods such as 
-\code{draw}, which is defined in middle of the class (ln. 10--12), can
+\code{draw}, which is defined in middle of the class (ln 10--12), can
 potentially access them.
 
 \begin{figure}[t]
@@ -547,19 +547,19 @@ potentially access them.
 \CEU supports structured constructs to deal with events, aiming to eradicate
 explicit manipulation of state variables for control-flow purposes.
 %
-In Figure~\ref{lst.armageddon}.b, the loop to detect double clicks (ln. 4--10)
-awaits the first click (ln. 5) and then, while watching 1 second (ln. 6--9),
-awaits the second click (ln. 7).
+In Figure~\ref{lst.armageddon}.b, the loop to detect double clicks (ln 4--10)
+awaits the first click (ln 5) and then, while watching 1 second (ln 6--9),
+awaits the second click (ln 7).
 If the second click occurs within 1 second, the \code{break} terminates the
-loop (ln. 8) and the \code{emit} in sequence signals the double click to the
-application (ln. 12).
+loop (ln 8) and the \code{emit} in sequence signals the double click to the
+application (ln 12).
 Otherwise, the \code{watching} block as a whole aborts after 1 second  and the
-loop restarts, falling back to the first click \code{await} (ln. 5).
+loop restarts, falling back to the first click \code{await} (ln 5).
 %
 Double click detection in \CEU does not rely on state variables and is entirely
 self-contained in the \code{loop} body.
 Also, those 7 lines of code \emph{only} detect the double click, leaving the
-actual effect (ln. 12) as well as all unrelated code (such as redrawing the
+actual effect (ln 12) as well as all unrelated code (such as redrawing the
 button) to happen outside the loop.
 
 The \code{await} allows for nested control-flow statements to suspend execution
@@ -753,20 +753,20 @@ callbacks \code{draw} and \code{update} to manage the state machine of
 Figure~\ref{fig.bomber.fsm}.
 %
 The class first defines one state variable for each effect to perform
-(ln. 4--7).
+(ln 4--7).
 The ``Oh no!'' sound plays as soon as the object starts in \emph{state-1} 
-(ln. 11).
-The \code{update} callback (ln. 14--38) first updates the pingu animation and
-movement on every frame, regardless of its current state (ln. 15--16).
+(ln 11).
+The \code{update} callback (ln 14--38) first updates the pingu animation and
+movement on every frame, regardless of its current state (ln 15--16).
 When the animation reaches the 10th frame, it switches to \emph{state-2} and
-plays the ``Bomb!'' sound (ln. 18--22).
+plays the ``Bomb!'' sound (ln 18--22).
 The state variable \code{sound\_played} is required because the sprite frame
 doesn't necessarily advance on every \code{update} invocation (e.g.,
 \code{update} may execute twice during the 10th frame).
-The same reasoning and technique applies to \emph{state-3} (ln. 24--32 and
+The same reasoning and technique applies to \emph{state-3} (ln 24--32 and
 41--46).
-The explosion sprite appears in a single frame in \emph{state-4} (ln. 45).
-Finally, the pingu dies after the animation frames terminate (ln. 34--37).
+The explosion sprite appears in a single frame in \emph{state-4} (ln 45).
+Finally, the pingu dies after the animation frames terminate (ln 34--37).
 %
 Note that a single numeric state variable would suffice to track the states as
 in Figure~\ref{fig.bomber.fsm}, but the original developers probably chose to
@@ -791,25 +791,25 @@ retains runtime state, such as local variables and the program counter, across
 reactions to events (i.e., across \code{await} statements).
 The pingu movement and sprite animation are isolated in two other
 \code{code/await} abstractions and execute in separate through the \code{spawn}
-primitive (ln. 4--5).
+primitive (ln 4--5).
 In \CEU, if multiple abstractions react to the same event, the scheduler
 employs lexical order to preserve determinism, i.e., the \code{spawn} that
 appears first in the source code reacts first~\cite{ceu.mod15}.
-The event \code{game.update} (ln. 12,16,24) is analogous to the \code{update}
+The event \code{game.update} (ln 12,16,24) is analogous to the \code{update}
 callback of C++ and occurs on every game frame.
 %
-The code tracks the animation aliveness (ln. 7--27) and, on termination,
-performs the last bomber effect, killing the pingu (ln. 30).
-As soon as the animation starts, the code performs the first effect (ln. 9).
+The code tracks the animation aliveness (ln 7--27) and, on termination,
+performs the last bomber effect, killing the pingu (ln 30).
+As soon as the animation starts, the code performs the first effect (ln 9).
 The intermediate effects are performed when the corresponding conditions occur
-(ln. 12,16,24).
-The \code{do-end} block (ln. 19--25), restricts the lifespan of the
-single-frame explosion sprite (ln. 21): after the next game tick (ln. 24), the
+(ln 12,16,24).
+The \code{do-end} block (ln 19--25), restricts the lifespan of the
+single-frame explosion sprite (ln 21): after the next game tick (ln 24), the
 block terminates and automatically destroys the spawned abstraction (removing
 it from the screen).
 %
 In contrast with the implementation in C++, all effects occur in a contiguous
-chunk of code (ln. 7--30), which handles no extra functionality.
+chunk of code (ln 7--30), which handles no extra functionality.
 
 \subsubsection{Summary \& Pattern Uses in Pingus}
 
@@ -848,7 +848,7 @@ machines in direct style.
 Among all 65 implementation files in \CEU, we found 29 cases in 25 files that
 use structured mechanisms to substitute states machines.
 They typically manifest as \code{await} statements in sequence (e.g.,
-ln. 5,7 in Figure~\ref{lst.armageddon} and ln. 12,16,24 in
+ln 5,7 in Figure~\ref{lst.armageddon} and ln 12,16,24 in
 Figure~\ref{lst.bomber}).
 %or in aborting constructs such as \code{par/or} and \code{watching}.
 
@@ -974,29 +974,29 @@ For closing stories, the game also shows a \emph{Credits screen} before
 returning to the world map.%
 \footnote{Credits screen animation: \url{github.com/an000/p/#4} }
 
-In C++, the class \code{StoryDot} in Figure~\ref{lst.story}.a (ln. 1--12) first
-reads the level file (ln. 5) to check whether it is a closing story and should,
+In C++, the class \code{StoryDot} in Figure~\ref{lst.story}.a (ln 1--12) first
+reads the level file (ln 5) to check whether it is a closing story and should,
 after termination, show the \emph{Credits screen}.
 %
-The boolean variable \code{show\_credits} (ln. 2,5,10) is passed to the class
-\code{StoryScreen} (ln. 10) and represents the screen continuation, i.e., what
+The boolean variable \code{show\_credits} (ln 2,5,10) is passed to the class
+\code{StoryScreen} (ln 10) and represents the screen continuation, i.e., what
 to do after showing the story.
 The class \code{StoryScreen} (not shown) then forwards the continuation even
-further to the auxiliary class \code{StoryScreenComp} (ln. 16--40).
+further to the auxiliary class \code{StoryScreenComp} (ln 16--40).
 %
 When the method \code{next\_text} has no story pages left to display
-(ln. 32--38), it decides where to go next, depending on the continuation flag
-\code{show\_credits} (ln. 33).
+(ln 32--38), it decides where to go next, depending on the continuation flag
+\code{show\_credits} (ln 33).
 
 In \CEU, the \code{loop} of Figure~\ref{lst.story}.b controls the flow between
 the screens to show as a direct sequence of statements.
 %
-We first invoke the \code{Worldmap} (ln. 2), which shows the map and lets
+We first invoke the \code{Worldmap} (ln 2), which shows the map and lets
 the player interact with it (e.g., walking around) until a dot is clicked.
-If the player selects a story dot (ln. 4--9), we invoke the \code{Story}
-and await its termination (ln. 5).
-After showing the story, we check the returned values (ln. 6) to perhaps show
-the \code{Credits} screen (ln. 8).
+If the player selects a story dot (ln 4--9), we invoke the \code{Story}
+and await its termination (ln 5).
+After showing the story, we check the returned values (ln 6) to perhaps show
+the \code{Credits} screen (ln 8).
 The enclosing loop restores the \code{Worldmap} and repeats the process.
 
 \begin{figure*}[t]
@@ -1072,23 +1072,23 @@ C++ and the \emph{direct style} of \CEU for screen transitions:
     \item C++ uses an explicit stack to push the \code{Worldmap} screen (not
           shown in Figure~\ref{lst.hier}.a).
     \item \CEU invokes the \code{Worldmap} screen expecting a return value
-          (Figure~\ref{lst.hier}.b, ln. 2).
+          (Figure~\ref{lst.hier}.b, ln 2).
     \end{itemize}
 \item \code{Worldmap} (\emph{blue dot click}) $\longrightarrow$ \code{Story}:
     \begin{itemize}
     %\setlength\itemsep{0em}
     \item C++ pushes the \code{Story} screen passing the continuation flag
-          (Figure~\ref{lst.hier}.a, ln. 10).
+          (Figure~\ref{lst.hier}.a, ln 10).
     \item \CEU stores the \code{Worldmap} return value and invokes the \code{Story} screen
-          (Figure~\ref{lst.hier}.b, ln. 2,5).
+          (Figure~\ref{lst.hier}.b, ln 2,5).
     \end{itemize}
 \item \code{Story} $\longrightarrow$ \code{Credits}:
     \begin{itemize}
     %\setlength\itemsep{0em}
     \item C++ replaces the current \code{Story} screen with the \code{Credits}
-          screen (Figure~\ref{lst.hier}.a, ln. 34).
+          screen (Figure~\ref{lst.hier}.a, ln 34).
     \item \CEU invokes the \code{Credits} screen after the \code{await Story}
-          returns (Figure~\ref{lst.hier}.b, ln. 8).
+          returns (Figure~\ref{lst.hier}.b, ln 8).
     \end{itemize}
 \item \code{Credits} $\longrightarrow$ \code{Worldmap}:
     \begin{itemize}
@@ -1096,7 +1096,7 @@ C++ and the \emph{direct style} of \CEU for screen transitions:
     \item C++ pops the \code{Credits} screen, going back to the \code{Worldmap}
           screen (not shown in Figure~\ref{lst.hier}.a).
     \item \CEU uses an enclosing \code{loop} to restart the process
-          (Figure~\ref{lst.hier}.b, ln. 1--13).
+          (Figure~\ref{lst.hier}.b, ln 1--13).
     \end{itemize}
 \end{enumerate}
 
@@ -1186,13 +1186,13 @@ end
 \end{figure*}
 
 In C++, the class \code{Bomber} in Figure~\ref{lst.hier}.a declares a
-\code{sprite} member (ln. 3) to handle its animation frames.
+\code{sprite} member (ln 3) to handle its animation frames.
 %
 The \code{Sprite} class is part of the game engine and knows how to update and
 render itself.
 However, the \code{Bomber} still has to respond to \code{update} and
 \code{draw} requests from the game and forward them to the sprite
-(ln. 11--13 and 15--18).
+(ln 11--13 and 15--18).
 %
 To understand how the \code{update} callback flows from the original
 environment stimulus to the game down to the sprite, we need to follow a long
@@ -1240,13 +1240,13 @@ The \code{draw} callback also flows through a similar dispatching hierarchy
 until reaching the \code{Sprite} class.
 
 In \CEU, the \code{Bomber} abstraction presented in Figure~\ref{lst.hier}.b
-spawns a \code{Sprite} animation instance on its body (ln. 3).
+spawns a \code{Sprite} animation instance on its body (ln 3).
 %
 The \code{Sprite} abstraction can react directly to external \code{update}
 and \code{draw} events, bypassing the program hierarchy entirely.
 Events in \CEU are broadcasted to the entire application in lexical order,
-i.e., an abstraction that appears first in the source code (e.g., ln. 3) reacts
-before another one that appears second (e.g., ln. 4).
+i.e., an abstraction that appears first in the source code (e.g., ln 3) reacts
+before another one that appears second (e.g., ln 4).
 As discussed in Section~\ref{sec.pats.fsms.2}, this rule preserves determinism
 and also conforms to the program static hierarchy.
 While (\emph{and only while}) the bomber abstraction is alive, the sprite
@@ -1305,8 +1305,8 @@ counters, and a small map, all coexisting with the game screen during its
 whole lifespan.
 
 In C++, the widgets are created in the constructor of the class
-\code{GameSession} in Figure~\ref{lst.ui}.a (ln. 5--7), added to a UI container
-(ln. 9--11), and are never removed since they must always be visible.
+\code{GameSession} in Figure~\ref{lst.ui}.a (ln 5--7), added to a UI container
+(ln 9--11), and are never removed since they must always be visible.
 Arguably, to better express the intent of making them coexist with the game
 screen, the widgets could alternatively be declared as top-level automatic
 (non-dynamic) members.
@@ -1391,7 +1391,7 @@ end
 \end{figure*}
 
 In \CEU, the UI entities that coexist are simply created in the same lexical
-block of the \code{Game} abstraction in Figure~\ref{lst.ui}.b (ln. 3--5).
+block of the \code{Game} abstraction in Figure~\ref{lst.ui}.b (ln 3--5).
 %
 Since abstractions can react independently, they do not require a dispatching
 container.
@@ -1403,7 +1403,7 @@ stack-allocated local variables.
 %
 The \emph{Bomber action} of Section~\ref{sec.pats.fsms.2} also relies on
 lexical scope to delimit the lifespan of the explosion sprite into a single
-frame (Figure~\ref{lst.bomber}, ln. 19--25).
+frame (Figure~\ref{lst.bomber}, ln 19--25).
 
 \subsubsection{Case Study: Dynamic Pingus Lifecycle}
 \label{sec.pats.lifespan.2}
@@ -1424,14 +1424,14 @@ conditions, such as falling from a high altitude.%
 In C++, the class \code{PinguHolder} in Figure~\ref{lst.pingus}.a is a
 container that holds all alive pingus.
 %
-The method \code{PinguHolder::create\_pingu} (ln. 1--6) is called periodically
+The method \code{PinguHolder::create\_pingu} (ln 1--6) is called periodically
 to create a new \code{Pingu} and add it to the \code{pingus} collection
-(ln. 3--4).
-The method \code{PinguHolder::update} (ln. 8--18) checks the state of all
-pingus on every frame, removing those with the dead status (ln. 12--14).
+(ln 3--4).
+The method \code{PinguHolder::update} (ln 8--18) checks the state of all
+pingus on every frame, removing those with the dead status (ln 12--14).
 %
 Note that if the programmer disregards the call to \code{remove}, a dead pingu
-would remain in the collection and still update on every frame (ln. 11).
+would remain in the collection and still update on every frame (ln 11).
 Since the \code{draw} behavior for a dead pingu is innocuous, the death could
 go unnoticed when testing it but the program would keep consuming memory and
 CPU time.
@@ -1442,7 +1442,7 @@ a container typically holds a strong reference to a child (sometimes the only
 reference to it), and the runtime cannot magically detect it as garbage.
 %
 Hence, entities with dynamic lifespan always require explicit matching
-\code{add} and \code{remove} calls associated to a container (ln. 4,13).
+\code{add} and \code{remove} calls associated to a container (ln 4,13).
 
 \begin{figure}[t]
 \centering
@@ -1457,13 +1457,13 @@ In addition, the \code{spawn} statement supports a pool identifier to associate
 a new instance with a pool.
 %
 The game screen in Figure~\ref{lst.pingus}.b spawns a new \code{Pingu} on every
-invocation of \code{Pingu\_Spawn} (ln. 4--7).
+invocation of \code{Pingu\_Spawn} (ln 4--7).
 %
-The \code{spawn} statement (ln. 6) specifies the pool declared at the top-level
-block of the game screen (ln. 3).
+The \code{spawn} statement (ln 6) specifies the pool declared at the top-level
+block of the game screen (ln 3).
 In this case, the lifespan of the new instances follows the scope of the pool
-(ln. 1--9) instead of the enclosing scope of the \code{spawn} statement
-(ln. 4--7), surviving the call to \code{Pingu\_Spawn}.
+(ln 1--9) instead of the enclosing scope of the \code{spawn} statement
+(ln 4--7), surviving the call to \code{Pingu\_Spawn}.
 Since pools are also subject to lexical scope, the lifespan of all dynamically
 allocated pingus is constrained to the game screen.
 %
@@ -1480,7 +1480,7 @@ containers or explicit deallocation.
 To remove a pingu from the game in \CEU, we just need to terminate its execution
 block according to the appropriate conditions:
 %
-The \code{escape} statement (ln. 17) aborts the execution block of the
+The \code{escape} statement (ln 17) aborts the execution block of the
 \code{Pingu} instance, removing it from its associated pool automatically.
 Hence, a dynamic instance that terminates naturally leaves no traces in the 
 program.
